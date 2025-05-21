@@ -11,6 +11,15 @@ session_start(); // Start the session at the beginning of the file
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* Optional: You can add custom styles here if needed */
+        body, html {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+.navbar {
+    margin-top: 0;
+    margin-bottom: 0;
+}
         .navbar-brand img {
             max-height: 40px; /* Adjust as needed */
             margin-right: 10px; /* Add some space between logo and text */
@@ -20,7 +29,7 @@ session_start(); // Start the session at the beginning of the file
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-white">
         <div class="container">
-            <a class="navbar-brand" href="index.php">
+            <a class="navbar-brand" href="dashboard.php">
                 <img src="https://via.placeholder.com/40" alt="Logo">
                 FarmFresh Connect
             </a>
@@ -49,7 +58,7 @@ session_start(); // Start the session at the beginning of the file
                                 </ul>
                             </li>';
                     } else {
-                        echo '<li class="nav-item"><a class="nav-link" href="login.php">Sign In</a></li>
+                        echo '<li class="nav-item"><a class="nav-link" href="index.php">Sign In</a></li>
                               <li class="nav-item"><a class="nav-link" href="register.php">Sign Up</a></li>';
                     }
                     ?>

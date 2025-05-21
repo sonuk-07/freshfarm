@@ -1,12 +1,69 @@
 <?php
-session_start(); // Start the session ONCE, at the very beginning
+session_start();
 include '../config/db.php';
-// Redirect if not logged in or not a consumer
+
+// Check if user is logged in and is an admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header("Location: ../auth/login.php");
+    header("Location: ../auth/index.php");
     exit();
 }
+
+// Fetch dashboard statistics from database
+// Total Users
+$users_query = "SELECT COUNT(*) as total_users FROM users";
+$users_result = mysqli_query($dbconn, $users_query);
+$users_data = mysqli_fetch_assoc($users_result);
+$total_users = $users_data['total_users'];
+
+// Total Farmers
+$farmers_query = "SELECT COUNT(*) as total_farmers FROM users WHERE role = 'farmer'";
+$farmers_result = mysqli_query($dbconn, $farmers_query);
+$farmers_data = mysqli_fetch_assoc($farmers_result);
+$total_farmers = $farmers_data['total_farmers'];
+
+// Total Consumers
+$consumers_query = "SELECT COUNT(*) as total_consumers FROM users WHERE role = 'consumer'";
+$consumers_result = mysqli_query($dbconn, $consumers_query);
+$consumers_data = mysqli_fetch_assoc($consumers_result);
+$total_consumers = $consumers_data['total_consumers'];
+
+// Total Products
+$products_query = "SELECT COUNT(*) as total_products FROM products";
+$products_result = mysqli_query($dbconn, $products_query);
+$products_data = mysqli_fetch_assoc($products_result);
+$total_products = $products_data['total_products'] ?? 0;
+
+// Total Orders
+$orders_query = "SELECT COUNT(*) as total_orders FROM orders";
+$orders_result = mysqli_query($dbconn, $orders_query);
+$orders_data = mysqli_fetch_assoc($orders_result);
+$total_orders = $orders_data['total_orders'] ?? 0;
+
+// Total Revenue
+$revenue_query = "SELECT SUM(total_amount) as total_revenue FROM orders WHERE status = 'delivered'";
+$revenue_result = mysqli_query($dbconn, $revenue_query);
+$revenue_data = mysqli_fetch_assoc($revenue_result);
+$total_revenue = $revenue_data['total_revenue'] ?? 0;
+
+// Recent Users
+$recent_users_query = "SELECT * FROM users ORDER BY created_at DESC LIMIT 5";
+$recent_users_result = mysqli_query($dbconn, $recent_users_query);
+
+// Recent Products - Modified to match your schema
+$recent_products_query = "SELECT p.*, u.username as farmer_name, c.name as category_name 
+                         FROM products p 
+                         JOIN users u ON p.seller_id = u.user_id 
+                         LEFT JOIN categories c ON p.category_id = c.category_id
+                         ORDER BY p.created_at DESC LIMIT 5";
+$recent_products_result = mysqli_query($dbconn, $recent_products_query);
+
+// Recent Orders - Modified to match your schema
+$recent_orders_query = "SELECT o.*, u.username FROM orders o 
+                       JOIN users u ON o.consumer_id = u.user_id 
+                       ORDER BY o.order_date DESC LIMIT 5";
+$recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,309 +71,212 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - FarmFresh Connect</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        body {
-            font-family: 'Open Sans', sans-serif;
-            background-color: #f8f9fa;
-        }
-        .dashboard-header {
-            padding: 1rem 0;
-            border-bottom: 1px solid #dee2e6;
-        }
-        .stats-container {
-            margin: 2rem 0;
-        }
-        .stat-card {
-            background: white;
+        .dashboard-card {
             border-radius: 10px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            height: 100%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
         }
-        .stat-card .icon {
-            color: #28a745;
-            margin-bottom: 1rem;
+        .dashboard-card:hover {
+            transform: translateY(-5px);
         }
-        .stat-card .trend {
-            font-size: 0.875rem;
-            color: #28a745;
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background-color: #343a40;
         }
-        .data-table {
-            background: white;
-            border-radius: 10px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
+        .sidebar a {
+            color: rgba(255,255,255,.75);
+            padding: 10px 15px;
+            display: block;
+            text-decoration: none;
+            transition: all 0.3s;
         }
-        .table th {
-            font-weight: 600;
-            color: #495057;
+        .sidebar a:hover, .sidebar a.active {
+            color: #fff;
+            background-color: rgba(255,255,255,.1);
         }
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
+        .sidebar a i {
+            margin-right: 10px;
         }
-        .status-active {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .status-pending {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        .status-processing {
-            background-color: #cce5ff;
-            color: #004085;
-        }
-        .status-shipped {
-            background-color: #e2e3e5;
-            color: #383d41;
-        }
-        .status-delivered {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .btn-add {
-            padding: 0.375rem 1rem;
-            font-size: 0.875rem;
-        }
-        .role-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-        }
-        .role-farmer {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-        }
-        .role-consumer {
-            background-color: #fff3e0;
-            color: #ef6c00;
+        .content-wrapper {
+            min-height: calc(100vh - 56px);
         }
     </style>
 </head>
 <body>
     <?php include '../includes/navbar.php'; ?>
-
-    <div class="container py-4">
-        <div class="dashboard-header d-flex justify-content-between align-items-center">
-            <div>
-                <h1 class="h3 mb-0">Admin Dashboard</h1>
-                <p class="text-muted mb-0">Manage your marketplace and monitor activity</p>
-            </div>
-            <button class="btn btn-success" type="button">System Settings</button>
-        </div>
-
-        <div class="stats-container">
-            <div class="row g-4">
-                <div class="col-md-3">
-                    <div class="stat-card">
-                        <div class="icon mb-3">
-                            <i class="fas fa-users fa-2x"></i>
-                        </div>
-                        <h3 class="h2 mb-2">4</h3>
-                        <p class="text-muted mb-1">Total Users</p>
-                        <p class="trend mb-0">+12% from last month</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card">
-                        <div class="icon mb-3">
-                            <i class="fas fa-shopping-cart fa-2x"></i>
-                        </div>
-                        <h3 class="h2 mb-2">4</h3>
-                        <p class="text-muted mb-1">Total Orders</p>
-                        <p class="trend mb-0">+23% from last month</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card">
-                        <div class="icon mb-3">
-                            <i class="fas fa-box fa-2x"></i>
-                        </div>
-                        <h3 class="h2 mb-2">4</h3>
-                        <p class="text-muted mb-1">Products</p>
-                        <p class="trend mb-0">+7% from last month</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card">
-                        <div class="icon mb-3">
-                            <i class="fas fa-dollar-sign fa-2x"></i>
-                        </div>
-                        <h3 class="h2 mb-2">$12,345</h3>
-                        <p class="text-muted mb-1">Revenue</p>
-                        <p class="trend mb-0">+18% from last month</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <ul class="nav nav-tabs mb-4">
-            <li class="nav-item">
-                <a class="nav-link active" href="#">Overview</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Users</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Products</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Orders</a>
-            </li>
-        </ul>
-
+    
+    <div class="container-fluid">
         <div class="row">
-            <div class="col-md-6">
-                <div class="data-table">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="mb-0">Recent Users</h5>
-                        <button class="btn btn-outline-success btn-add">Add User</button>
+            <!-- Sidebar -->
+            <div class="col-md-2 d-none d-md-block sidebar py-4">
+                <a href="dashboard.php" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                <a href="#"><i class="fas fa-users"></i> Users</a>
+                <a href="#"><i class="fas fa-carrot"></i> Products</a>
+                <a href="#"><i class="fas fa-shopping-cart"></i> Orders</a>
+                <a href="#"><i class="fas fa-chart-bar"></i> Reports</a>
+                <a href="#"><i class="fas fa-cog"></i> Settings</a>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-10 ms-auto content-wrapper p-4">
+                <h2 class="mb-4">Admin Dashboard</h2>
+                
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-4 mb-3">
+                        <div class="dashboard-card bg-primary text-white p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">Total Users</h6>
+                                    <h2 class="mb-0"><?php echo $total_users; ?></h2>
+                                </div>
+                                <i class="fas fa-users fa-2x"></i>
+                            </div>
+                            <div class="mt-2">
+                                <small>Farmers: <?php echo $total_farmers; ?> | Consumers: <?php echo $total_consumers; ?></small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Role</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>John Doe</td>
-                                    <td><span class="role-badge role-consumer">Consumer</span></td>
-                                    <td><span class="status-badge status-active">Active</span></td>
-                                </tr>
-                                <tr>
-                                    <td>Jane Smith</td>
-                                    <td><span class="role-badge role-farmer">Farmer</span></td>
-                                    <td><span class="status-badge status-active">Active</span></td>
-                                </tr>
-                                <tr>
-                                    <td>Mark Wilson</td>
-                                    <td><span class="role-badge role-consumer">Consumer</span></td>
-                                    <td><span class="status-badge status-pending">Pending</span></td>
-                                </tr>
-                                <tr>
-                                    <td>Sarah Brown</td>
-                                    <td><span class="role-badge role-farmer">Farmer</span></td>
-                                    <td><span class="status-badge status-active">Active</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="col-md-4 mb-3">
+                        <div class="dashboard-card bg-success text-white p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">Total Products</h6>
+                                    <h2 class="mb-0"><?php echo $total_products; ?></h2>
+                                </div>
+                                <i class="fas fa-carrot fa-2x"></i>
+                            </div>
+                            <div class="mt-2">
+                                <small>Active listings in marketplace</small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-center mt-3">
-                        <a href="#" class="text-success">View all users</a>
+                    <div class="col-md-4 mb-3">
+                        <div class="dashboard-card bg-info text-white p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">Total Orders</h6>
+                                    <h2 class="mb-0"><?php echo $total_orders; ?></h2>
+                                </div>
+                                <i class="fas fa-shopping-cart fa-2x"></i>
+                            </div>
+                            <div class="mt-2">
+                                <small>Revenue: $<?php echo number_format($total_revenue, 2); ?></small>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="data-table">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="mb-0">Recent Orders</h5>
-                        <button class="btn btn-outline-success btn-add">Add Order</button>
+                
+                <!-- Recent Activity -->
+                <div class="row">
+                    <!-- Recent Users -->
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Recent Users</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <?php if(mysqli_num_rows($recent_users_result) > 0): ?>
+                                        <?php while($user = mysqli_fetch_assoc($recent_users_result)): ?>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong><?php echo htmlspecialchars($user['username']); ?></strong>
+                                                    <br>
+                                                    <small class="text-muted"><?php echo htmlspecialchars($user['email']); ?></small>
+                                                </div>
+                                                <span class="badge bg-<?php echo $user['role'] == 'farmer' ? 'success' : 'primary'; ?> rounded-pill">
+                                                    <?php echo ucfirst($user['role']); ?>
+                                                </span>
+                                            </li>
+                                        <?php endwhile; ?>
+                                    <?php else: ?>
+                                        <li class="list-group-item">No users found</li>
+                                    <?php endif; ?>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Order</th>
-                                    <th>Status</th>
-                                    <th>Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>#ORD-001</td>
-                                    <td><span class="status-badge status-delivered">Delivered</span></td>
-                                    <td>$45.50</td>
-                                </tr>
-                                <tr>
-                                    <td>#ORD-002</td>
-                                    <td><span class="status-badge status-processing">Processing</span></td>
-                                    <td>$32.75</td>
-                                </tr>
-                                <tr>
-                                    <td>#ORD-003</td>
-                                    <td><span class="status-badge status-shipped">Shipped</span></td>
-                                    <td>$78.20</td>
-                                </tr>
-                                <tr>
-                                    <td>#ORD-004</td>
-                                    <td><span class="status-badge status-pending">Pending</span></td>
-                                    <td>$21.30</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    
+                    <!-- Recent Products -->
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Recent Products</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <?php if(mysqli_num_rows($recent_products_result) > 0): ?>
+                                        <?php while($product = mysqli_fetch_assoc($recent_products_result)): ?>
+                                            <li class="list-group-item">
+                                                <strong><?php echo htmlspecialchars($product['name']); ?></strong>
+                                                <br>
+                                                <small class="text-muted">By: <?php echo htmlspecialchars($product['farmer_name']); ?></small>
+                                                <div class="d-flex justify-content-between mt-2">
+                                                    <span class="badge bg-secondary">
+                                                        <?php echo htmlspecialchars($product['category_name'] ?? 'Uncategorized'); ?>
+                                                    </span>
+                                                    <span class="text-success">
+                                                        $<?php echo number_format($product['price'], 2); ?>
+                                                    </span>
+                                                </div>
+                                            </li>
+                                        <?php endwhile; ?>
+                                    <?php else: ?>
+                                        <li class="list-group-item">No products found</li>
+                                    <?php endif; ?>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-center mt-3">
-                        <a href="#" class="text-success">View all orders</a>
+                    
+                    <!-- Recent Orders -->
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Recent Orders</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <?php if(mysqli_num_rows($recent_orders_result) > 0): ?>
+                                        <?php while($order = mysqli_fetch_assoc($recent_orders_result)): ?>
+                                            <li class="list-group-item">
+                                                <strong>Order #<?php echo $order['order_id']; ?></strong>
+                                                <br>
+                                                <small class="text-muted">By: <?php echo htmlspecialchars($order['username']); ?></small>
+                                                <div class="d-flex justify-content-between mt-2">
+                                                    <span class="badge bg-<?php 
+                                                        if($order['status'] == 'delivered') echo 'success';
+                                                        elseif($order['status'] == 'processing') echo 'warning';
+                                                        elseif($order['status'] == 'canceled') echo 'danger';
+                                                        else echo 'secondary';
+                                                    ?>">
+                                                        <?php echo ucfirst($order['status']); ?>
+                                                    </span>
+                                                    <span class="text-success">
+                                                        $<?php echo number_format($order['total_amount'], 2); ?>
+                                                    </span>
+                                                </div>
+                                            </li>
+                                        <?php endwhile; ?>
+                                    <?php else: ?>
+                                        <li class="list-group-item">No orders found</li>
+                                    <?php endif; ?>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="data-table mt-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="mb-0">Recent Products</h5>
-                <button class="btn btn-outline-success btn-add">Add Product</button>
-            </div>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Product</th>
-                            <th>Seller</th>
-                            <th>Category</th>
-                            <th>Price</th>
-                            <th>Stock</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Organic Apples</td>
-                            <td>Green Farms</td>
-                            <td>Fruits</td>
-                            <td>$3.99/lb</td>
-                            <td>45</td>
-                        </tr>
-                        <tr>
-                            <td>Fresh Tomatoes</td>
-                            <td>Sunny Fields</td>
-                            <td>Vegetables</td>
-                            <td>$2.49/lb</td>
-                            <td>78</td>
-                        </tr>
-                        <tr>
-                            <td>Free Range Eggs</td>
-                            <td>Happy Hens</td>
-                            <td>Dairy & Eggs</td>
-                            <td>$5.99/dozen</td>
-                            <td>24</td>
-                        </tr>
-                        <tr>
-                            <td>Raw Honey</td>
-                            <td>Busy Bees</td>
-                            <td>Other</td>
-                            <td>$8.50/jar</td>
-                            <td>15</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="text-center mt-3">
-                <a href="#" class="text-success">View all products</a>
             </div>
         </div>
     </div>
-
+    
     <?php include '../includes/footer.php'; ?>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

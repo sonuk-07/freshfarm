@@ -50,7 +50,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $valid_token) {
             mysqli_stmt_bind_param($stmt, "s", $email);
             mysqli_stmt_execute($stmt);
             
-            $message = "Password has been reset successfully. <a href='login.php'>Login now</a>";
+            $message = "Password has been reset successfully. <a href='index.php'>Login now</a>";
         } else {
             $message = "Error updating password: " . mysqli_error($dbconn);
         }
@@ -112,7 +112,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $valid_token) {
             <?php endif; ?>
             
             <div class="text-center mt-3">
-                <a href="login.php" class="text-muted">Back to Login</a>
+                <a href="index.php" class="text-muted">Back to Login</a>
             </div>
         </div>
     </div>

@@ -128,7 +128,7 @@ if (mysqli_num_rows($table_check) > 0) {
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="mb-0">Your Dashboard</h1>
-            <a href="../marketplace.php" class="btn btn-success">Shop Now</a>
+            <a href="./marketplace.php" class="btn btn-success">Shop Now</a>
         </div>
         
         <!-- Stats Cards -->

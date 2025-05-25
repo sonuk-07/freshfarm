@@ -72,8 +72,6 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
     <title>Admin Dashboard - FarmFresh Connect</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css">
     <style>
         .dashboard-card {
             border-radius: 10px;
@@ -84,45 +82,42 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
             transform: translateY(-5px);
         }
         .sidebar {
-            min-height: calc(100vh - 56px);
+            min-height: 100vh;
             background-color: #343a40;
         }
         .sidebar a {
-            color: rgba(255,255,255,.75);
+            color: #f8f9fa;
             padding: 10px 15px;
             display: block;
             text-decoration: none;
-            transition: all 0.3s;
         }
-        .sidebar a:hover, .sidebar a.active {
-            color: #fff;
-            background-color: rgba(255,255,255,.1);
+        .sidebar a:hover {
+            background-color: #495057;
         }
-        .sidebar a i {
-            margin-right: 10px;
+        .sidebar a.active {
+            background-color: #0d6efd;
         }
-        .content-wrapper {
-            min-height: calc(100vh - 56px);
+        .content {
+            padding: 20px;
         }
     </style>
 </head>
 <body>
-    <?php include '../includes/navbar.php'; ?>
-    
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-2 d-none d-md-block sidebar py-4">
-                <a href="dashboard.php" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-                <a href="#"><i class="fas fa-users"></i> Users</a>
-                <a href="#"><i class="fas fa-carrot"></i> Products</a>
-                <a href="#"><i class="fas fa-shopping-cart"></i> Orders</a>
-                <a href="#"><i class="fas fa-chart-bar"></i> Reports</a>
-                <a href="#"><i class="fas fa-cog"></i> Settings</a>
+            <div class="col-md-2 p-0 sidebar">
+                <h2 class="text-center text-white py-3">Admin Panel</h2>
+                <a href="dashboard.php" class="active"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
+                <a href="users.php"><i class="fas fa-users me-2"></i> Users</a>
+                <a href="products.php"><i class="fas fa-box me-2"></i> Products</a>
+                <a href="categories.php"><i class="fas fa-tags me-2"></i> Categories</a>
+                <a href="orders.php"><i class="fas fa-shopping-cart me-2"></i> Orders</a>
+                <a href="../auth/logout.php"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
             </div>
             
             <!-- Main Content -->
-            <div class="col-md-10 ms-auto content-wrapper p-4">
+            <div class="col-md-10 content">
                 <h2 class="mb-4">Admin Dashboard</h2>
                 
                 <!-- Stats Cards -->
@@ -189,7 +184,7 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
                                                     <br>
                                                     <small class="text-muted"><?php echo htmlspecialchars($user['email']); ?></small>
                                                 </div>
-                                                <span class="badge bg-<?php echo $user['role'] == 'farmer' ? 'success' : 'primary'; ?> rounded-pill">
+                                                <span class="badge bg-<?php echo $user['role'] == 'farmer' ? 'success' : ($user['role'] == 'admin' ? 'danger' : 'primary'); ?> rounded-pill">
                                                     <?php echo ucfirst($user['role']); ?>
                                                 </span>
                                             </li>
@@ -274,8 +269,6 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
             </div>
         </div>
     </div>
-    
-    <?php include '../includes/footer.php'; ?>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -164,15 +164,15 @@ $items_result = mysqli_query($dbconn, $items_query);
                                             </div>
                                         </td>
                                         <td class="text-center"><?php echo $item['quantity']; ?></td>
-                                        <td class="text-end">$<?php echo number_format($item['price'], 2); ?></td>
-                                        <td class="text-end">$<?php echo number_format($item_total, 2); ?></td>
+                                        <td class="text-end">रू<?php echo number_format($item['price'], 2); ?></td>
+                                        <td class="text-end">रू<?php echo number_format($item_total, 2); ?></td>
                                     </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                                 <tfoot class="table-light">
                                     <tr>
                                         <td colspan="3" class="text-end"><strong>Total</strong></td>
-                                        <td class="text-end"><strong>$<?php echo number_format($order['total_amount'], 2); ?></strong></td>
+                                        <td class="text-end"><strong>रू<?php echo number_format($order['total_amount'], 2); ?></strong></td>
                                     </tr>
                                 </tfoot>
                             </table>

@@ -76,8 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                 $price = $item['price'];
                 $seller_id = $item['seller_id'];
                 
-                $item_query = "INSERT INTO order_items (order_id, product_id, quantity, price) 
-                              VALUES ($order_id, $product_id, $quantity, $price)";
+                $item_query = "INSERT INTO order_items (order_id, product_id, quantity, price_per_unit, subtotal) 
+                              VALUES ($order_id, $product_id, $quantity, $price, $quantity * $price)";
                 mysqli_query($dbconn, $item_query);
                 
                 // Update product stock
@@ -200,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                         
                         <div class="d-flex justify-content-between mt-4">
                             <h5>Total</h5>
-                            <h5>$<?php echo number_format($cart_total, 2); ?></h5>
+                            <h5>रू<?php echo number_format($cart_total, 2); ?></h5>
                         </div>
                     </div>
                 </div>

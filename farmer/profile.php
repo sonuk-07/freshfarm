@@ -9,41 +9,88 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'farmer') {
 }
 
 $farmer_id = $_SESSION['user_id'];
+$success_message = '';
+$error_message = '';
+$password_success = '';
+$password_error = '';
+$image_success = '';
+$image_error = '';
 
 // Fetch farmer's profile
 $profile_query = "SELECT * FROM users WHERE user_id = $farmer_id";
 $profile_result = mysqli_query($dbconn, $profile_query);
 $profile = mysqli_fetch_assoc($profile_result);
 
+// Get farmer statistics
+// Total products
+$products_query = "SELECT COUNT(*) as total_products FROM products WHERE seller_id = $farmer_id";
+$products_result = mysqli_query($dbconn, $products_query);
+$products_data = mysqli_fetch_assoc($products_result);
+$total_products = $products_data['total_products'] ?? 0;
+
+// Total orders
+$orders_query = "SELECT COUNT(*) as total_orders FROM order_items oi 
+                JOIN products p ON oi.product_id = p.product_id 
+                WHERE p.seller_id = $farmer_id";
+$orders_result = mysqli_query($dbconn, $orders_query);
+$orders_data = mysqli_fetch_assoc($orders_result);
+$total_orders = $orders_data['total_orders'] ?? 0;
+
+// Total revenue
+$revenue_query = "SELECT SUM(oi.quantity * oi.price_per_unit) as total_revenue 
+                FROM order_items oi 
+                JOIN products p ON oi.product_id = p.product_id 
+                JOIN orders o ON oi.order_id = o.order_id 
+                WHERE p.seller_id = $farmer_id AND o.status = 'delivered'";
+$revenue_result = mysqli_query($dbconn, $revenue_query);
+$revenue_data = mysqli_fetch_assoc($revenue_result);
+$total_revenue = $revenue_data['total_revenue'] ?? 0;
+
 // Handle profile update
-if (isset($_POST['update_profile'])) {
-    $username = mysqli_real_escape_string($dbconn, $_POST['username']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
+    $first_name = mysqli_real_escape_string($dbconn, $_POST['first_name']);
+    $last_name = mysqli_real_escape_string($dbconn, $_POST['last_name']);
     $email = mysqli_real_escape_string($dbconn, $_POST['email']);
     $phone = mysqli_real_escape_string($dbconn, $_POST['phone']);
     $address = mysqli_real_escape_string($dbconn, $_POST['address']);
     $bio = mysqli_real_escape_string($dbconn, $_POST['bio']);
     
-    // Update profile
-    $update_query = "UPDATE users SET 
-                    username = '$username',
-                    email = '$email',
-                    phone = '$phone',
-                    address = '$address',
-                    bio = '$bio'
-                    WHERE user_id = $farmer_id";
+    // Check if email already exists for another user
+    $email_check = "SELECT user_id FROM users WHERE email = '$email' AND user_id != $farmer_id";
+    $email_result = mysqli_query($dbconn, $email_check);
     
-    if (mysqli_query($dbconn, $update_query)) {
-        $success_message = "Profile updated successfully!";
-        // Refresh profile data
-        $profile_result = mysqli_query($dbconn, $profile_query);
-        $profile = mysqli_fetch_assoc($profile_result);
+    if (mysqli_num_rows($email_result) > 0) {
+        $error_message = "Email already in use by another account.";
     } else {
-        $error_message = "Error updating profile: " . mysqli_error($dbconn);
+        // Update user profile
+        $update_query = "UPDATE users SET 
+                        first_name = '$first_name', 
+                        last_name = '$last_name', 
+                        email = '$email', 
+                        phone = '$phone', 
+                        address = '$address', 
+                        bio = '$bio' 
+                        WHERE user_id = $farmer_id";
+        
+        if (mysqli_query($dbconn, $update_query)) {
+            $success_message = "Profile updated successfully!";
+            
+            // Update session variables
+            $_SESSION['first_name'] = $first_name;
+            $_SESSION['last_name'] = $last_name;
+            $_SESSION['email'] = $email;
+            
+            // Refresh profile data
+            $profile_result = mysqli_query($dbconn, $profile_query);
+            $profile = mysqli_fetch_assoc($profile_result);
+        } else {
+            $error_message = "Error updating profile: " . mysqli_error($dbconn);
+        }
     }
 }
 
 // Handle password change
-if (isset($_POST['change_password'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
     $current_password = $_POST['current_password'];
     $new_password = $_POST['new_password'];
     $confirm_password = $_POST['confirm_password'];
@@ -72,7 +119,7 @@ if (isset($_POST['change_password'])) {
 }
 
 // Handle profile image upload
-if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
     $allowed = ['jpg', 'jpeg', 'png', 'gif'];
     $filename = $_FILES['profile_image']['name'];
     $filetype = pathinfo($filename, PATHINFO_EXTENSION);
@@ -157,6 +204,14 @@ if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
             padding: 20px;
             margin-bottom: 20px;
         }
+        .stats-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
     </style>
 </head>
 <body>
@@ -176,19 +231,184 @@ if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
             <div class="col-md-10 ms-auto content-wrapper p-4">
                 <h2 class="mb-4">My Profile</h2>
                 
-                <!-- Profile Header -->
-                <div class="profile-header d-flex flex-column flex-md-row align-items-center">
-                    <div class="text-center mb-3 mb-md-0 me-md-4">
-                        <?php if (!empty($profile['profile_image'])): ?>
-                            <img src="../uploads/profiles/<?php echo $profile['profile_image']; ?>" class="profile-image" alt="Profile Image">
-                        <?php else: ?>
-                            <img src="../assets/images/profile-placeholder.jpg" class="profile-image" alt="Profile Image">
-                        <?php endif; ?>
-                        <img src="../uploads/profiles/<?php echo $profile['profile_image']; ?>" class="profile-image" alt="Profile Image">
+                <?php if($success_message): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo $success_message; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if($error_message): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo $error_message; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if($password_success): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo $password_success; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if($password_error): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo $password_error; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if($image_success): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo $image_success; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if($image_error): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo $image_error; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <div class="row">
+                    <!-- Profile Stats -->
+                    <div class="col-md-4 mb-4">
+                        <div class="card profile-header text-center mb-4">
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <?php if(!empty($profile['profile_image'])): ?>
+                                        <img src="../uploads/profiles/<?php echo $profile['profile_image']; ?>" alt="Profile Image" class="profile-image">
+                                    <?php else: ?>
+                                        <div class="profile-image d-flex align-items-center justify-content-center bg-light">
+                                            <span class="display-4"><?php echo strtoupper(substr($profile['first_name'], 0, 1) . substr($profile['last_name'], 0, 1)); ?></span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <h4><?php echo htmlspecialchars($profile['first_name'] . ' ' . $profile['last_name']); ?></h4>
+                                <p class="text-muted"><?php echo htmlspecialchars($profile['email']); ?></p>
+                                <p class="text-muted">Member since <?php echo date('F Y', strtotime($profile['created_at'])); ?></p>
+                                
+                                <!-- Profile Image Upload Form -->
+                                <form action="" method="POST" enctype="multipart/form-data" class="mt-3">
+                                    <div class="mb-3">
+                                        <label for="profile_image" class="form-label">Update Profile Image</label>
+                                        <input type="file" class="form-control" id="profile_image" name="profile_image" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-outline-primary">Upload Image</button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <div class="stats-card bg-success text-white p-3">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="mb-0">Products</h6>
+                                            <h3 class="mb-0"><?php echo $total_products; ?></h3>
+                                        </div>
+                                        <i class="fas fa-carrot fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <div class="stats-card bg-info text-white p-3">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="mb-0">Orders</h6>
+                                            <h3 class="mb-0"><?php echo $total_orders; ?></h3>
+                                        </div>
+                                        <i class="fas fa-shopping-cart fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <div class="stats-card bg-primary text-white p-3">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="mb-0">Revenue</h6>
+                                            <h3 class="mb-0">$<?php echo number_format($total_revenue, 2); ?></h3>
+                                        </div>
+                                        <i class="fas fa-dollar-sign fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile Edit Form -->
+                    <div class="col-md-8 mb-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Edit Profile</h5>
+                            </div>
+                            <div class="card-body">
+                                <form action="" method="POST">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="first_name" class="form-label">First Name</label>
+                                            <input type="text" class="form-control" id="first_name" name="first_name" value="<?php echo htmlspecialchars($profile['first_name']); ?>" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="last_name" class="form-label">Last Name</label>
+                                            <input type="text" class="form-control" id="last_name" name="last_name" value="<?php echo htmlspecialchars($profile['last_name']); ?>" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="email" name="email" value="<?php echo htmlspecialchars($profile['email']); ?>" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="phone" class="form-label">Phone</label>
+                                        <input type="text" class="form-control" id="phone" name="phone" value="<?php echo htmlspecialchars($profile['phone']); ?>">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="address" class="form-label">Address</label>
+                                        <textarea class="form-control" id="address" name="address" rows="2"><?php echo htmlspecialchars($profile['address']); ?></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="bio" class="form-label">Bio</label>
+                                        <textarea class="form-control" id="bio" name="bio" rows="3" placeholder="Tell customers about your farm and products..."><?php echo htmlspecialchars($profile['bio']); ?></textarea>
+                                    </div>
+                                    <button type="submit" name="update_profile" class="btn btn-primary">Update Profile</button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Change Password Form -->
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Change Password</h5>
+                            </div>
+                            <div class="card-body">
+                                <form action="" method="POST">
+                                    <div class="mb-3">
+                                        <label for="current_password" class="form-label">Current Password</label>
+                                        <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="new_password" class="form-label">New Password</label>
+                                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                    </div>
+                                    <button type="submit" name="change_password" class="btn btn-warning">Change Password</button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    
+    <?php include '../includes/footer.php'; ?>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

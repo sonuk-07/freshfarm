@@ -173,12 +173,12 @@ if (isset($_SESSION['cart_error'])) {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>$<?php echo number_format($item['price'], 2); ?></td>
+                                            <td>रू<?php echo number_format($item['price'], 2); ?></td>
                                             <td>
                                                 <input type="number" name="quantity[<?php echo $item['cart_id']; ?>]" class="form-control quantity-input" value="<?php echo $item['quantity']; ?>" min="0" max="<?php echo $item['stock']; ?>">
                                                 <small class="text-muted"><?php echo $item['stock']; ?> available</small>
                                             </td>
-                                            <td class="text-end">$<?php echo number_format($subtotal, 2); ?></td>
+                                            <td class="text-end">रू<?php echo number_format($subtotal, 2); ?></td>
                                             <td>
                                                 <form action="cart.php" method="post" class="d-inline">
                                                     <input type="hidden" name="cart_id" value="<?php echo $item['cart_id']; ?>">
@@ -193,7 +193,7 @@ if (isset($_SESSION['cart_error'])) {
                                 <tfoot>
                                     <tr>
                                         <td colspan="3" class="text-end fw-bold">Total:</td>
-                                        <td class="text-end fw-bold">$<?php echo number_format($cart_total, 2); ?></td>
+                                        <td class="text-end fw-bold">रू<?php echo number_format($cart_total, 2); ?></td>
                                         <td></td>
                                     </tr>
                                 </tfoot>

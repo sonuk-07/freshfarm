@@ -130,7 +130,7 @@ $categories_result = mysqli_query($dbconn, $categories_query);
                                                 </td>
                                                 <td><?php echo htmlspecialchars($product['name']); ?></td>
                                                 <td><?php echo htmlspecialchars($product['category_name'] ?? 'Uncategorized'); ?></td>
-                                                <td>$<?php echo number_format($product['price'], 2); ?></td>
+                                                <td>रू<?php echo number_format($product['price'], 2); ?></td>
                                                 <td><?php echo $product['stock']; ?></td>
                                                 <td><?php echo mb_strimwidth(htmlspecialchars($product['description']), 0, 50, "..."); ?></td>
                                                 <td>
@@ -191,7 +191,7 @@ $categories_result = mysqli_query($dbconn, $categories_query);
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="price" class="form-label">Price ($)</label>
+                                <label for="price" class="form-label">Price (रू)</label>
                                 <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" required>
                             </div>
                             <div class="col-md-6">

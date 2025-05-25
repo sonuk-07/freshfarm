@@ -162,7 +162,7 @@ $status_result = mysqli_query($dbconn, $status_query);
                         </p>
                     </div>
                     <div class="col-md-6 text-md-end">
-                        <h5 class="card-title">Total: $<?php echo number_format($order['total_amount'], 2); ?></h5>
+                        <h5 class="card-title">Total: रू<?php echo number_format($order['total_amount'], 2); ?></h5>
                         <p class="text-muted mb-1">Payment Method: <?php echo ucfirst($order['payment_method']); ?></p>
                         <?php if($order['status'] == 'pending'): ?>
                             <form action="cancel_order.php" method="post" onsubmit="return confirm('Are you sure you want to cancel this order?');">
@@ -217,9 +217,9 @@ $status_result = mysqli_query($dbconn, $status_query);
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>$<?php echo number_format($item['price'], 2); ?></td>
+                                        <td>रू<?php echo number_format($item['price'], 2); ?></td>
                                         <td><?php echo $item['quantity']; ?></td>
-                                        <td class="text-end">$<?php echo number_format($item['price'] * $item['quantity'], 2); ?></td>
+                                        <td class="text-end">रू<?php echo number_format($item['price'] * $item['quantity'], 2); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>

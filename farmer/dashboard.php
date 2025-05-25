@@ -30,7 +30,7 @@ $revenue_query = "SELECT SUM(oi.quantity * oi.price_per_unit) as total_revenue
                  FROM order_items oi 
                  JOIN products p ON oi.product_id = p.product_id 
                  JOIN orders o ON oi.order_id = o.order_id 
-                 WHERE p.seller_id = $farmer_id AND o.status = 'delivered'";
+                 WHERE p.seller_id = $farmer_id AND o.status != 'canceled'";
 $revenue_result = mysqli_query($dbconn, $revenue_query);
 $revenue_data = mysqli_fetch_assoc($revenue_result);
 $total_revenue = $revenue_data['total_revenue'] ?? 0;

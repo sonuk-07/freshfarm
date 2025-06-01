@@ -4,40 +4,40 @@ include '../config/db.php';
 
 // Check if user is logged in and is a consumer
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'consumer') {
-    header("Location: ../auth/index.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 
 $consumer_id = $_SESSION['user_id'];
 
 // Initialize filters
-$category_filter = isset($_GET['category']) ? intval($_GET['category']) : 0;
-$min_price = isset($_GET['min_price']) ? floatval($_GET['min_price']) : 0;
-$max_price = isset($_GET['max_price']) ? floatval($_GET['max_price']) : 1000000;
-$sort_by = isset($_GET['sort_by']) ? $_GET['sort_by'] : 'newest';
+$category_filter = isset($_GET['category']) ? (int)$_GET['category'] : 0;
+$min_price = isset($_GET['min_price']) ? (float)$_GET['min_price'] : 0;
+$max_price = isset($_GET['max_price']) ? (float)$_GET['max_price'] : 1000;
+$sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'newest';
 $search_term = isset($_GET['search']) ? mysqli_real_escape_string($dbconn, $_GET['search']) : '';
 
 // Build query based on filters
-$query = "SELECT p.*, c.name as category_name, u.first_name, u.last_name, u.username 
-          FROM products p 
+$query = "SELECT p.*, c.name as category_name, u.first_name, u.last_name 
+          FROM products p
           LEFT JOIN categories c ON p.category_id = c.category_id
           LEFT JOIN users u ON p.seller_id = u.user_id
           WHERE p.stock > 0";
 
-// Add category filter if selected
+// Apply category filter
 if ($category_filter > 0) {
     $query .= " AND p.category_id = $category_filter";
 }
 
-// Add price range filter
+// Apply price filter
 $query .= " AND p.price BETWEEN $min_price AND $max_price";
 
-// Add search term if provided
+// Apply search filter
 if (!empty($search_term)) {
     $query .= " AND (p.name LIKE '%$search_term%' OR p.description LIKE '%$search_term%')";
 }
 
-// Add sorting
+// Apply sorting
 switch ($sort_by) {
     case 'price_low':
         $query .= " ORDER BY p.price ASC";
@@ -56,73 +56,20 @@ switch ($sort_by) {
 
 $products_result = mysqli_query($dbconn, $query);
 
-// Get all categories for filter dropdown
-$categories_query = "SELECT * FROM categories ORDER BY name";
+// Get all categories for filter
+$categories_query = "SELECT * FROM categories ORDER BY name ASC";
 $categories_result = mysqli_query($dbconn, $categories_query);
 
-// Success message for add to cart
+// Success/error messages
 $success_message = '';
 $error_message = '';
-
-// Handle add to cart
-if (isset($_POST['add_to_cart'])) {
-    $product_id = intval($_POST['product_id']);
-    $quantity = intval($_POST['quantity']);
-    
-    // Check if product exists and has enough stock
-    $product_check = "SELECT * FROM products WHERE product_id = $product_id AND stock >= $quantity";
-    $product_result = mysqli_query($dbconn, $product_check);
-    
-    if (mysqli_num_rows($product_result) > 0) {
-        $product = mysqli_fetch_assoc($product_result);
-        
-        // Check if cart table exists, if not create it
-        $cart_table_check = mysqli_query($dbconn, "SHOW TABLES LIKE 'cart'");
-        if (mysqli_num_rows($cart_table_check) == 0) {
-            $create_cart_table = "CREATE TABLE cart (
-                cart_id INT(11) AUTO_INCREMENT PRIMARY KEY,
-                consumer_id INT(11) NOT NULL,
-                product_id INT(11) NOT NULL,
-                quantity INT(11) NOT NULL,
-                added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (consumer_id) REFERENCES users(user_id),
-                FOREIGN KEY (product_id) REFERENCES products(product_id)
-            )";
-            mysqli_query($dbconn, $create_cart_table);
-        }
-        
-        // Check if product already in cart
-        $cart_check = "SELECT * FROM cart WHERE consumer_id = $consumer_id AND product_id = $product_id";
-        $cart_result = mysqli_query($dbconn, $cart_check);
-        
-        if (mysqli_num_rows($cart_result) > 0) {
-            // Update quantity
-            $cart_item = mysqli_fetch_assoc($cart_result);
-            $new_quantity = $cart_item['quantity'] + $quantity;
-            
-            // Check if new quantity exceeds stock
-            if ($new_quantity <= $product['stock']) {
-                $update_cart = "UPDATE cart SET quantity = $new_quantity WHERE cart_id = {$cart_item['cart_id']}";
-                if (mysqli_query($dbconn, $update_cart)) {
-                    $success_message = "Cart updated successfully!";
-                } else {
-                    $error_message = "Error updating cart: " . mysqli_error($dbconn);
-                }
-            } else {
-                $error_message = "Cannot add more of this product. Exceeds available stock.";
-            }
-        } else {
-            // Add new item to cart
-            $add_to_cart = "INSERT INTO cart (consumer_id, product_id, quantity) VALUES ($consumer_id, $product_id, $quantity)";
-            if (mysqli_query($dbconn, $add_to_cart)) {
-                $success_message = "Product added to cart!";
-            } else {
-                $error_message = "Error adding to cart: " . mysqli_error($dbconn);
-            }
-        }
-    } else {
-        $error_message = "Product not available in the requested quantity.";
-    }
+if (isset($_SESSION['cart_message'])) {
+    $success_message = $_SESSION['cart_message'];
+    unset($_SESSION['cart_message']);
+}
+if (isset($_SESSION['cart_error'])) {
+    $error_message = $_SESSION['cart_error'];
+    unset($_SESSION['cart_error']);
 }
 ?>
 
@@ -131,41 +78,39 @@ if (isset($_POST['add_to_cart'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browse Products - FarmFresh Connect</title>
+    <title>Marketplace - FarmFresh Connect</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
     <style>
         body {
             font-family: 'Open Sans', sans-serif;
             background-color: #f8f9fa;
         }
         .product-card {
-            height: 100%;
-            transition: transform 0.3s;
             border-radius: 10px;
             overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
         }
         .product-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
         .product-img {
             height: 200px;
             object-fit: cover;
         }
-        .farmer-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: rgba(255,255,255,0.8);
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-        }
         .filter-card {
             border-radius: 10px;
-            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .category-badge {
+            background-color: #e9ecef;
+            color: #495057;
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 50px;
         }
     </style>
 </head>
@@ -174,7 +119,7 @@ if (isset($_POST['add_to_cart'])) {
     
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="mb-0">Browse Fresh Products</h1>
+            <h1 class="mb-0">Marketplace</h1>
             <a href="cart.php" class="btn btn-success">
                 <i class="fas fa-shopping-cart me-2"></i>View Cart
             </a>
@@ -196,20 +141,24 @@ if (isset($_POST['add_to_cart'])) {
         
         <div class="row">
             <!-- Filters Sidebar -->
-            <div class="col-md-3">
+            <div class="col-lg-3 mb-4">
                 <div class="card filter-card">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Filters</h5>
-                    </div>
                     <div class="card-body">
-                        <form method="GET" action="products.php">
-                            <!-- Category Filter -->
+                        <h5 class="card-title mb-3">Filters</h5>
+                        <form action="products.php" method="get">
+                            <!-- Search -->
+                            <?php if(!empty($search_term)): ?>
+                                <input type="hidden" name="search" value="<?php echo htmlspecialchars($search_term); ?>">
+                            <?php endif; ?>
+                            
+                            <!-- Categories -->
                             <div class="mb-3">
-                                <label for="category" class="form-label">Category</label>
-                                <select name="category" id="category" class="form-select">
+                                <label class="form-label fw-bold">Categories</label>
+                                <select class="form-select" name="category">
                                     <option value="0">All Categories</option>
+                                    <?php mysqli_data_seek($categories_result, 0); ?>
                                     <?php while($category = mysqli_fetch_assoc($categories_result)): ?>
-                                        <option value="<?php echo $category['category_id']; ?>" <?php echo ($category_filter == $category['category_id']) ? 'selected' : ''; ?>>
+                                        <option value="<?php echo $category['category_id']; ?>" <?php echo $category_filter == $category['category_id'] ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($category['name']); ?>
                                         </option>
                                     <?php endwhile; ?>
@@ -218,37 +167,38 @@ if (isset($_POST['add_to_cart'])) {
                             
                             <!-- Price Range -->
                             <div class="mb-3">
-                                <label class="form-label">Price Range</label>
+                                <label class="form-label fw-bold">Price Range</label>
                                 <div class="row g-2">
                                     <div class="col">
-                                        <input type="number" name="min_price" class="form-control" placeholder="Min" value="<?php echo $min_price; ?>">
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" name="min_price" value="<?php echo $min_price; ?>" min="0" step="0.01">
+                                        </div>
                                     </div>
                                     <div class="col">
-                                        <input type="number" name="max_price" class="form-control" placeholder="Max" value="<?php echo $max_price == 1000000 ? '' : $max_price; ?>">
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control" name="max_price" value="<?php echo $max_price; ?>" min="0" step="0.01">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
                             <!-- Sort By -->
                             <div class="mb-3">
-                                <label for="sort_by" class="form-label">Sort By</label>
-                                <select name="sort_by" id="sort_by" class="form-select">
-                                    <option value="newest" <?php echo ($sort_by == 'newest') ? 'selected' : ''; ?>>Newest First</option>
-                                    <option value="price_low" <?php echo ($sort_by == 'price_low') ? 'selected' : ''; ?>>Price: Low to High</option>
-                                    <option value="price_high" <?php echo ($sort_by == 'price_high') ? 'selected' : ''; ?>>Price: High to Low</option>
-                                    <option value="name" <?php echo ($sort_by == 'name') ? 'selected' : ''; ?>>Name (A-Z)</option>
+                                <label class="form-label fw-bold">Sort By</label>
+                                <select class="form-select" name="sort">
+                                    <option value="newest" <?php echo $sort_by == 'newest' ? 'selected' : ''; ?>>Newest First</option>
+                                    <option value="price_low" <?php echo $sort_by == 'price_low' ? 'selected' : ''; ?>>Price: Low to High</option>
+                                    <option value="price_high" <?php echo $sort_by == 'price_high' ? 'selected' : ''; ?>>Price: High to Low</option>
+                                    <option value="name" <?php echo $sort_by == 'name' ? 'selected' : ''; ?>>Name: A to Z</option>
                                 </select>
                             </div>
-                            
-                            <!-- Search Term (hidden field to preserve search) -->
-                            <?php if(!empty($search_term)): ?>
-                                <input type="hidden" name="search" value="<?php echo htmlspecialchars($search_term); ?>">
-                            <?php endif; ?>
                             
                             <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
                         </form>
                         
-                        <?php if(!empty($_GET)): ?>
+                        <?php if($category_filter > 0 || $min_price > 0 || $max_price < 1000 || !empty($search_term) || $sort_by != 'newest'): ?>
                             <a href="products.php" class="btn btn-outline-secondary w-100 mt-2">Clear Filters</a>
                         <?php endif; ?>
                     </div>
@@ -256,59 +206,56 @@ if (isset($_POST['add_to_cart'])) {
             </div>
             
             <!-- Products Grid -->
-            <div class="col-md-9">
+            <div class="col-lg-9">
                 <?php if(mysqli_num_rows($products_result) > 0): ?>
-                    <div class="row row-cols-1 row-cols-md-3 g-4">
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                         <?php while($product = mysqli_fetch_assoc($products_result)): ?>
                             <div class="col">
                                 <div class="card product-card h-100">
-                                    <div class="position-relative">
-                                        <?php if(!empty($product['product_image'])): ?>
-                                            <img src="../uploads/products/<?php echo $product['product_image']; ?>" class="card-img-top product-img" alt="<?php echo htmlspecialchars($product['name']); ?>">
-                                        <?php else: ?>
-                                            <img src="https://via.placeholder.com/300x200?text=No+Image" class="card-img-top product-img" alt="No Image">
-                                        <?php endif; ?>
-                                        <div class="farmer-badge">
-                                            <i class="fas fa-user-circle me-1"></i>
-                                            <?php echo htmlspecialchars($product['first_name'] . ' ' . $product['last_name']); ?>
-                                        </div>
-                                    </div>
+                                    <?php if(!empty($product['product_image'])): ?>
+                                        <img src="../uploads/products/<?php echo $product['product_image']; ?>" class="card-img-top product-img" alt="<?php echo htmlspecialchars($product['name']); ?>">
+                                    <?php else: ?>
+                                        <img src="../assets/images/product-placeholder.jpg" class="card-img-top product-img" alt="Product Image">
+                                    <?php endif; ?>
+                                    
                                     <div class="card-body d-flex flex-column">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <h5 class="card-title"><?php echo htmlspecialchars($product['name']); ?></h5>
-                                            <span class="badge bg-success">$<?php echo number_format($product['price'], 2); ?></span>
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <span class="category-badge"><?php echo htmlspecialchars($product['category_name'] ?? 'Uncategorized'); ?></span>
                                         </div>
-                                        <p class="card-text text-muted small mb-2">
-                                            <i class="fas fa-tag me-1"></i>
-                                            <?php echo htmlspecialchars($product['category_name'] ?? 'Uncategorized'); ?>
-                                        </p>
-                                        <p class="card-text"><?php echo htmlspecialchars(substr($product['description'], 0, 100)) . (strlen($product['description']) > 100 ? '...' : ''); ?></p>
-                                        <p class="card-text text-muted mt-auto mb-2">
-                                            <small><i class="fas fa-box me-1"></i> <?php echo $product['stock']; ?> in stock</small>
-                                        </p>
-                                        <form method="POST" class="mt-auto">
-                                            <input type="hidden" name="product_id" value="<?php echo $product['product_id']; ?>">
-                                            <div class="input-group mb-3">
-                                                <input type="number" name="quantity" class="form-control" value="1" min="1" max="<?php echo $product['stock']; ?>">
-                                                <button type="submit" name="add_to_cart" class="btn btn-primary">
-                                                    <i class="fas fa-cart-plus me-1"></i> Add to Cart
+                                        
+                                        <h5 class="card-title"><?php echo htmlspecialchars($product['name']); ?></h5>
+                                        <p class="card-text text-muted small mb-2">By <?php echo htmlspecialchars($product['first_name'] . ' ' . $product['last_name']); ?></p>
+                                        <p class="card-text text-primary fw-bold mb-2">$<?php echo number_format($product['price'], 2); ?></p>
+                                        <p class="card-text small mb-3"><?php echo mb_strimwidth(htmlspecialchars($product['description']), 0, 80, "..."); ?></p>
+                                        
+                                        <div class="mt-auto d-flex">
+                                            <a href="product_details.php?id=<?php echo $product['product_id']; ?>" class="btn btn-outline-primary flex-grow-1 me-2">View Details</a>
+                                            <form action="add_to_cart.php" method="post">
+                                                <input type="hidden" name="product_id" value="<?php echo $product['product_id']; ?>">
+                                                <input type="hidden" name="quantity" value="1">
+                                                <button type="submit" class="btn btn-success">
+                                                    <i class="fas fa-cart-plus"></i>
                                                 </button>
-                                            </div>
-                                        </form>
+                                            </form>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         <?php endwhile; ?>
                     </div>
                 <?php else: ?>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        No products found matching your criteria. Try adjusting your filters.
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4>No products found</h4>
+                        <p class="text-muted">Try adjusting your filters or search criteria.</p>
+                        <a href="products.php" class="btn btn-primary">Clear Filters</a>
                     </div>
                 <?php endif; ?>
             </div>
         </div>
     </div>
+    
+    <?php include '../includes/footer.php'; ?>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

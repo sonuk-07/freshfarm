@@ -70,206 +70,562 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - FarmFresh Connect</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .dashboard-card {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .dashboard-header {
+            margin-bottom: 32px;
+        }
+
+        .dashboard-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .dashboard-subtitle {
+            color: #64748b;
+            font-size: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .stat-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .stat-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .stat-icon.users { background: #dbeafe; color: #2563eb; }
+        .stat-icon.products { background: #dcfce7; color: #16a34a; }
+        .stat-icon.orders { background: #fce7f3; color: #db2777; }
+        .stat-icon.revenue { background: #fef3c7; color: #d97706; }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .stat-description {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .navigation-tabs {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 16px;
+        }
+
+        .nav-tab {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #64748b;
+            text-decoration: none;
+            padding: 8px 0;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            color: #10b981;
+            border-bottom-color: #10b981;
+        }
+
+        .nav-tab:hover {
+            color: #10b981;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 24px;
+        }
+
+        .activity-list {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            font-size: 0.875rem;
+        }
+
+        .activity-icon.user { background: #dbeafe; color: #2563eb; }
+        .activity-icon.order { background: #dcfce7; color: #16a34a; }
+        .activity-icon.product { background: #fce7f3; color: #db2777; }
+        .activity-icon.warning { background: #fef3c7; color: #d97706; }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .activity-time {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .action-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .action-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .action-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 1.25rem;
+        }
+
+        .action-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        .settings-section {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+        }
+
+        .settings-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+
+        .settings-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        .toggle-switch {
+            width: 48px;
+            height: 24px;
+            background: #e2e8f0;
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #10b981;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
             transition: transform 0.3s ease;
         }
-        .dashboard-card:hover {
-            transform: translateY(-5px);
+
+        .toggle-switch.active::after {
+            transform: translateX(24px);
         }
-        .sidebar {
-            min-height: 100vh;
-            background-color: #343a40;
+
+        .dropdown-select {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            color: #1e293b;
+            font-size: 0.875rem;
         }
-        .sidebar a {
-            color: #f8f9fa;
-            padding: 10px 15px;
-            display: block;
+
+        .configure-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .logout-btn {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+            color: white;
             text-decoration: none;
         }
-        .sidebar a:hover {
-            background-color: #495057;
-        }
-        .sidebar a.active {
-            background-color: #0d6efd;
-        }
-        .content {
-            padding: 20px;
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 16px;
+            }
+            
+            .navigation-tabs {
+                flex-wrap: wrap;
+                gap: 16px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-2 p-0 sidebar">
-                <h2 class="text-center text-white py-3">Admin Panel</h2>
-                <a href="dashboard.php" class="active"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
-                <a href="users.php"><i class="fas fa-users me-2"></i> Users</a>
-                <a href="products.php"><i class="fas fa-box me-2"></i> Products</a>
-                <a href="categories.php"><i class="fas fa-tags me-2"></i> Categories</a>
-                <a href="orders.php"><i class="fas fa-shopping-cart me-2"></i> Orders</a>
-                <a href="../auth/logout.php"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
-            </div>
-            
-            <!-- Main Content -->
-            <div class="col-md-10 content">
-                <h2 class="mb-4">Admin Dashboard</h2>
-                
-                <!-- Stats Cards -->
-                <div class="row mb-4">
-                    <div class="col-md-4 mb-3">
-                        <div class="dashboard-card bg-primary text-white p-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-0">Total Users</h6>
-                                    <h2 class="mb-0"><?php echo $total_users; ?></h2>
-                                </div>
-                                <i class="fas fa-users fa-2x"></i>
-                            </div>
-                            <div class="mt-2">
-                                <small>Farmers: <?php echo $total_farmers; ?> | Consumers: <?php echo $total_consumers; ?></small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="dashboard-card bg-success text-white p-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-0">Total Products</h6>
-                                    <h2 class="mb-0"><?php echo $total_products; ?></h2>
-                                </div>
-                                <i class="fas fa-carrot fa-2x"></i>
-                            </div>
-                            <div class="mt-2">
-                                <small>Active listings in marketplace</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="dashboard-card bg-info text-white p-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-0">Total Orders</h6>
-                                    <h2 class="mb-0"><?php echo $total_orders; ?></h2>
-                                </div>
-                                <i class="fas fa-shopping-cart fa-2x"></i>
-                            </div>
-                            <div class="mt-2">
-                                <small>Revenue: $<?php echo number_format($total_revenue, 2); ?></small>
-                            </div>
-                        </div>
+    <a href="../auth/logout.php" class="logout-btn">
+        <i class="fas fa-sign-out-alt me-2"></i> Logout
+    </a>
+
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Admin Dashboard</h1>
+            <p class="dashboard-subtitle">Manage the FarmFresh Connect platform</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-title">Total Users</div>
+                    <div class="stat-icon users">
+                        <i class="fas fa-users"></i>
                     </div>
                 </div>
-                
-                <!-- Recent Activity -->
-                <div class="row">
-                    <!-- Recent Users -->
-                    <div class="col-md-4 mb-4">
-                        <div class="card h-100">
-                            <div class="card-header bg-light">
-                                <h5 class="mb-0">Recent Users</h5>
-                            </div>
-                            <div class="card-body">
-                                <ul class="list-group list-group-flush">
-                                    <?php if(mysqli_num_rows($recent_users_result) > 0): ?>
-                                        <?php while($user = mysqli_fetch_assoc($recent_users_result)): ?>
-                                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <strong><?php echo htmlspecialchars($user['username']); ?></strong>
-                                                    <br>
-                                                    <small class="text-muted"><?php echo htmlspecialchars($user['email']); ?></small>
-                                                </div>
-                                                <span class="badge bg-<?php echo $user['role'] == 'farmer' ? 'success' : ($user['role'] == 'admin' ? 'danger' : 'primary'); ?> rounded-pill">
-                                                    <?php echo ucfirst($user['role']); ?>
-                                                </span>
-                                            </li>
-                                        <?php endwhile; ?>
-                                    <?php else: ?>
-                                        <li class="list-group-item">No users found</li>
-                                    <?php endif; ?>
-                                </ul>
-                            </div>
-                        </div>
+                <div class="stat-value"><?php echo $total_users; ?></div>
+                <div class="stat-description"><?php echo $total_farmers; ?> farmers, <?php echo $total_consumers; ?> consumers</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-title">Total Products</div>
+                    <div class="stat-icon products">
+                        <i class="fas fa-seedling"></i>
                     </div>
-                    
-                    <!-- Recent Products -->
-                    <div class="col-md-4 mb-4">
-                        <div class="card h-100">
-                            <div class="card-header bg-light">
-                                <h5 class="mb-0">Recent Products</h5>
-                            </div>
-                            <div class="card-body">
-                                <ul class="list-group list-group-flush">
-                                    <?php if(mysqli_num_rows($recent_products_result) > 0): ?>
-                                        <?php while($product = mysqli_fetch_assoc($recent_products_result)): ?>
-                                            <li class="list-group-item">
-                                                <strong><?php echo htmlspecialchars($product['name']); ?></strong>
-                                                <br>
-                                                <small class="text-muted">By: <?php echo htmlspecialchars($product['farmer_name']); ?></small>
-                                                <div class="d-flex justify-content-between mt-2">
-                                                    <span class="badge bg-secondary">
-                                                        <?php echo htmlspecialchars($product['category_name'] ?? 'Uncategorized'); ?>
-                                                    </span>
-                                                    <span class="text-success">
-                                                        $<?php echo number_format($product['price'], 2); ?>
-                                                    </span>
-                                                </div>
-                                            </li>
-                                        <?php endwhile; ?>
-                                    <?php else: ?>
-                                        <li class="list-group-item">No products found</li>
-                                    <?php endif; ?>
-                                </ul>
-                            </div>
-                        </div>
+                </div>
+                <div class="stat-value"><?php echo $total_products; ?></div>
+                <div class="stat-description">Active listings in marketplace</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-title">Total Orders</div>
+                    <div class="stat-icon orders">
+                        <i class="fas fa-shopping-cart"></i>
                     </div>
-                    
-                    <!-- Recent Orders -->
-                    <div class="col-md-4 mb-4">
-                        <div class="card h-100">
-                            <div class="card-header bg-light">
-                                <h5 class="mb-0">Recent Orders</h5>
-                            </div>
-                            <div class="card-body">
-                                <ul class="list-group list-group-flush">
-                                    <?php if(mysqli_num_rows($recent_orders_result) > 0): ?>
-                                        <?php while($order = mysqli_fetch_assoc($recent_orders_result)): ?>
-                                            <li class="list-group-item">
-                                                <strong>Order #<?php echo $order['order_id']; ?></strong>
-                                                <br>
-                                                <small class="text-muted">By: <?php echo htmlspecialchars($order['username']); ?></small>
-                                                <div class="d-flex justify-content-between mt-2">
-                                                    <span class="badge bg-<?php 
-                                                        if($order['status'] == 'delivered') echo 'success';
-                                                        elseif($order['status'] == 'processing') echo 'warning';
-                                                        elseif($order['status'] == 'canceled') echo 'danger';
-                                                        else echo 'secondary';
-                                                    ?>">
-                                                        <?php echo ucfirst($order['status']); ?>
-                                                    </span>
-                                                    <span class="text-success">
-                                                        $<?php echo number_format($order['total_amount'], 2); ?>
-                                                    </span>
-                                                </div>
-                                            </li>
-                                        <?php endwhile; ?>
-                                    <?php else: ?>
-                                        <li class="list-group-item">No orders found</li>
-                                    <?php endif; ?>
-                                </ul>
-                            </div>
-                        </div>
+                </div>
+                <div class="stat-value"><?php echo $total_orders; ?></div>
+                <div class="stat-description">Orders processed</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-title">Revenue</div>
+                    <div class="stat-icon revenue">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="stat-value">$<?php echo number_format($total_revenue, 0); ?></div>
+                <div class="stat-description">+15.3% this month</div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="navigation-tabs">
+            <a href="#" class="nav-tab active">Overview</a>
+            <a href="users.php" class="nav-tab">User Management</a>
+            <a href="products.php" class="nav-tab">Product Management</a>
+            <a href="orders.php" class="nav-tab">Order Management</a>
+            <a href="#" class="nav-tab">Review Moderation</a>
+            <a href="#" class="nav-tab">Analytics</a>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section">
+            <h2 class="section-title">Recent Activity</h2>
+            <div class="activity-list">
+                <?php 
+                // Get most recent user
+                mysqli_data_seek($recent_users_result, 0);
+                $recent_user = mysqli_fetch_assoc($recent_users_result);
+                if($recent_user): ?>
+                <div class="activity-item">
+                    <div class="activity-icon user">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">New <?php echo $recent_user['role']; ?> registered: <?php echo htmlspecialchars($recent_user['username']); ?></div>
+                        <div class="activity-time">2 minutes ago</div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php 
+                // Get most recent order
+                mysqli_data_seek($recent_orders_result, 0);
+                $recent_order = mysqli_fetch_assoc($recent_orders_result);
+                if($recent_order): ?>
+                <div class="activity-item">
+                    <div class="activity-icon order">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">Order #<?php echo $recent_order['order_id']; ?> completed successfully</div>
+                        <div class="activity-time">5 minutes ago</div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php 
+                // Get most recent product
+                mysqli_data_seek($recent_products_result, 0);
+                $recent_product = mysqli_fetch_assoc($recent_products_result);
+                if($recent_product): ?>
+                <div class="activity-item">
+                    <div class="activity-icon product">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">New product added: <?php echo htmlspecialchars($recent_product['name']); ?></div>
+                        <div class="activity-time">12 minutes ago</div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <div class="activity-item">
+                    <div class="activity-icon warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">Product review flagged for moderation</div>
+                        <div class="activity-time">18 minutes ago</div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Quick Actions -->
+        <div class="section">
+            <h2 class="section-title">Quick Actions</h2>
+            <div class="quick-actions">
+                <a href="users.php" class="action-card">
+                    <div class="action-icon users">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="action-title">Manage Users</div>
+                </a>
+
+                <a href="products.php" class="action-card">
+                    <div class="action-icon products">
+                        <i class="fas fa-seedling"></i>
+                    </div>
+                    <div class="action-title">Review Products</div>
+                </a>
+
+                <a href="#" class="action-card">
+                    <div class="action-icon warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="action-title">Moderate Reviews</div>
+                </a>
+
+                <a href="#" class="action-card">
+                    <div class="action-icon revenue">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="action-title">View Analytics</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Platform Settings -->
+        <div class="section">
+            <h2 class="section-title">
+                <i class="fas fa-cog" style="margin-right: 8px;"></i>
+                Platform Settings
+            </h2>
+            <div class="settings-section">
+                <div class="settings-item">
+                    <div class="settings-label">Maintenance Mode</div>
+                    <div class="toggle-switch" onclick="this.classList.toggle('active')"></div>
+                </div>
+                
+                <div class="settings-item">
+                    <div class="settings-label">Registration Mode</div>
+                    <select class="dropdown-select">
+                        <option selected>Open To All</option>
+                        <option>Invite Only</option>
+                        <option>Closed</option>
+                    </select>
+                </div>
+                
+                <div class="settings-item">
+                    <div class="settings-label">Notification Settings</div>
+                    <button class="configure-btn">Configure</button>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Add some interactivity
+        document.querySelectorAll('.toggle-switch').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                this.classList.toggle('active');
+            });
+        });
+
+        // Simulate real-time updates (optional)
+        setInterval(() => {
+            const timeElements = document.querySelectorAll('.activity-time');
+            timeElements.forEach(el => {
+                if (el.textContent.includes('minutes ago')) {
+                    let minutes = parseInt(el.textContent);
+                    if (!isNaN(minutes)) {
+                        el.textContent = `${minutes + 1} minutes ago`;
+                    }
+                }
+            });
+        }, 60000);
+    </script>
 </body>
 </html>

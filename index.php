@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,6 +8,12 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <style>
+    :root {
+      --primary-green: #198754;
+      --dark-green: #146c43;
+    }
+
+
     /* Hero Section */
     .hero {
       height: 700px;
@@ -85,9 +92,21 @@
 
     .feature-icon {
       font-size: 2.5rem;
-      color: #38b000;
+      color: var(--primary-green);
     }
 
+    /* CTA Section */
+    .cta {
+      background: #f8f9fa;
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .cta h2 {
+      font-size: 2rem;
+    }
+
+    /* Footer */
     .footer {
       background-color: #111;
       color: #ccc;
@@ -133,128 +152,135 @@
     }
   </style>
 </head>
+
 <body>
 
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
-  <div class="container">
-    <a class="navbar-brand text-success fw-bold" href="#">
-      <i class="fas fa-leaf me-2"></i>FarmFresh Connect
-    </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-      <ul class="navbar-nav me-3">
-        <li class="nav-item"><a class="nav-link" href="#">Products</a></li>
-        <li class="nav-item"><a class="nav-link" href="#">Categories</a></li>
-        <li class="nav-item"><a class="nav-link" href="#">Our Farmers</a></li>
-      </ul>
-      <a href="auth/login.php" class="btn btn-outline-success me-2">Login</a>
-      <a href="auth/signup.php" class="btn btn-success">Sign Up</a>
-    </div>
-  </div>
-</nav>
-
-<!-- Hero Section -->
-<section class="hero">
-  <div class="content">
-    <h1 class="display-4 fw-bold mb-4">Fresh From Farm to Your Table</h1>
-    <p class="lead mb-5">Connect directly with local farmers and enjoy the freshest produce while supporting your community</p>
-    <div class="d-flex justify-content-center gap-3">
-      <a href="consumer/marketplace.php" class="btn btn-light btn-lg">Shop Now</a>
-      <a href="auth/signup.php" class="btn btn-outline-light btn-lg">Join as Farmer</a>
-    </div>
-  </div>
-</section>
-
-<!-- Why Choose Section -->
-<section class="py-5 bg-light">
-  <div class="container py-5">
-    <h2 class="fw-bold text-center mb-3">Why Choose FarmFresh Connect?</h2>
-    <p class="text-center mb-5 text-muted">Experience the difference of truly fresh, locally-sourced produce</p>
-    <div class="row g-4">
-      <div class="col-md-4">
-        <div class="feature-card text-center h-100">
-          <div class="feature-icon">
-            <i class="fas fa-dollar-sign"></i>
-          </div>
-          <h5 class="fw-bold mb-3">Direct from Farmers</h5>
-          <p class="text-muted mb-0">No middlemen. Support local farmers and get the best prices.</p>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="feature-card text-center h-100">
-          <div class="feature-icon">
-            <i class="fas fa-bolt"></i>
-          </div>
-          <h5 class="fw-bold mb-3">Fresh & Fast</h5>
-          <p class="text-muted mb-0">From harvest to your doorstep in 24 hours or less.</p>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="feature-card text-center h-100">
-          <div class="feature-icon">
-            <i class="fas fa-check-circle"></i>
-          </div>
-          <h5 class="fw-bold mb-3">Quality Guaranteed</h5>
-          <p class="text-muted mb-0">Every product is verified for quality and freshness.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Call to Action -->
-<section class="cta">
-  <div class="container">
-    <h2 class="fw-bold mb-4">Ready to Experience Farm Fresh?</h2>
-    <p class="lead mb-5">Join thousands of satisfied customers who've made the switch to fresh, local produce</p>
-    <a href="consumer/marketplace.php" class="btn btn-light btn-lg">Start Shopping</a>
-  </div>
-</section>
-
-<!-- Footer -->
-<footer class="footer">
-  <div class="container">
-    <div class="row gy-4">
-      <div class="col-lg-4">
-        <div class="logo mb-3">
-          <i class="fas fa-leaf me-2"></i>FarmFresh Connect
-        </div>
-        <p class="text-muted">Connecting farmers directly with consumers for the freshest produce.</p>
-      </div>
-      <div class="col-lg-2 col-md-4">
-        <h6 class="text-white fw-bold mb-3">For Consumers</h6>
-        <ul class="list-unstyled footer-links">
-          <li><a href="consumer/marketplace.php">Browse Products</a></li>
-          <li><a href="#">Categories</a></li>
-          <li><a href="consumer/cart.php">My Cart</a></li>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
+    <div class="container">
+      <a class="navbar-brand text-success fw-bold" href="#">
+        <i class="fas fa-leaf me-2" aria-hidden="true"></i>FarmFresh Connect
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav me-3">
+          <li class="nav-item"><a class="nav-link" href="#">Products</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Categories</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Our Farmers</a></li>
         </ul>
-      </div>
-      <div class="col-lg-2 col-md-4">
-        <h6 class="text-white fw-bold mb-3">For Farmers</h6>
-        <ul class="list-unstyled footer-links">
-          <li><a href="auth/signup.php">Join as Farmer</a></li>
-          <li><a href="farmer/dashboard.php">Farmer Dashboard</a></li>
-        </ul>
-      </div>
-      <div class="col-lg-2 col-md-4">
-        <h6 class="text-white fw-bold mb-3">Support</h6>
-        <ul class="list-unstyled footer-links">
-          <li><a href="#">Help Center</a></li>
-          <li><a href="#">Contact Us</a></li>
-          <li><a href="#">Terms of Service</a></li>
-        </ul>
+        <a href="auth/login.php" class="btn btn-outline-success me-2">Login</a>
+        <a href="auth/register.php" class="btn btn-success">Sign Up</a>
       </div>
     </div>
-    <hr class="mt-5 mb-4 border-secondary">
-    <div class="text-center text-muted">
-      &copy; <?php echo date("Y"); ?> FarmFresh Connect. All rights reserved.
-    </div>
-  </div>
-</footer>
+  </nav>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Hero Section -->
+  <section class="hero" aria-hidden="true">
+    <div class="content">
+      <h1 class="display-4 fw-bold mb-4">Fresh From Farm to Your Table</h1>
+      <p class="lead mb-5">Connect directly with local farmers and enjoy the freshest produce while supporting your
+        community</p>
+      <div class="d-flex justify-content-center gap-3">
+        <a href="consumer/products.php" class="btn btn-light btn-lg">Shop Now</a>
+        <a href="auth/register.php" class="btn btn-outline-light btn-lg">Join as Farmer</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why Choose Section -->
+  <section class="py-5 bg-light">
+    <div class="container py-5">
+      <h2 class="fw-bold text-center mb-3">Why Choose FarmFresh Connect?</h2>
+      <p class="text-center mb-5 text-muted">Experience the difference of truly fresh, locally-sourced produce</p>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="feature-card text-center h-100">
+            <div class="feature-icon">
+              <i class="fas fa-dollar-sign" aria-hidden="true"></i>
+            </div>
+            <h5 class="fw-bold mb-3">Direct from Farmers</h5>
+            <p class="text-muted mb-0">No middlemen. Support local farmers and get the best prices.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="feature-card text-center h-100">
+            <div class="feature-icon">
+              <i class="fas fa-bolt" aria-hidden="true"></i>
+            </div>
+            <h5 class="fw-bold mb-3">Fresh & Fast</h5>
+            <p class="text-muted mb-0">From harvest to your doorstep in 24 hours or less.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="feature-card text-center h-100">
+            <div class="feature-icon">
+              <i class="fas fa-check-circle" aria-hidden="true"></i>
+            </div>
+            <h5 class="fw-bold mb-3">Quality Guaranteed</h5>
+            <p class="text-muted mb-0">Every product is verified for quality and freshness.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Call to Action -->
+  <section class="cta">
+    <div class="container">
+      <h2 class="fw-bold mb-4">Ready to Experience Farm Fresh?</h2>
+      <p class="lead mb-5">Join thousands of satisfied customers who've made the switch to fresh, local produce</p>
+      <a href="consumer/products.php" class="btn btn-success btn-lg">Start Shopping</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="row gy-4">
+        <div class="col-lg-4">
+          <div class="logo mb-3">
+            <i class="fas fa-leaf me-2" aria-hidden="true"></i>FarmFresh Connect
+          </div>
+          <p class="text-muted">Connecting farmers directly with consumers for the freshest produce.</p>
+        </div>
+        <div class="col-lg-2 col-md-4">
+          <h6 class="text-white fw-bold mb-3">For Consumers</h6>
+          <ul class="list-unstyled footer-links">
+            <li><a href="consumer/products.php">Browse Products</a></li>
+            <li><a href="#">Categories</a></li>
+            <li><a href="consumer/cart.php">My Cart</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-2 col-md-4">
+          <h6 class="text-white fw-bold mb-3">For Farmers</h6>
+          <ul class="list-unstyled footer-links">
+            <li><a href="auth/register.php">Join as Farmer</a></li>
+            <li><a href="farmer/dashboard.php">Farmer Dashboard</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-2 col-md-4">
+          <h6 class="text-white fw-bold mb-3">Support</h6>
+          <ul class="list-unstyled footer-links">
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">Contact Us</a></li>
+            <li><a href="#">Terms of Service</a></li>
+          </ul>
+        </div>
+      </div>
+      <hr class="mt-5 mb-4 border-secondary">
+      <div class="text-center text-muted">
+        <span id="year-copy"></span> FarmFresh Connect. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.getElementById("year-copy").innerHTML = `&copy; ${new Date().getFullYear()}`;
+  </script>
 </body>
+
 </html>

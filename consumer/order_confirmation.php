@@ -40,6 +40,7 @@ $items_result = mysqli_query($dbconn, $items_query);
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -53,16 +54,19 @@ $items_result = mysqli_query($dbconn, $items_query);
             font-family: 'Open Sans', sans-serif;
             background-color: #f8f9fa;
         }
+
         .confirmation-card {
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+
         .product-img {
             width: 60px;
             height: 60px;
             object-fit: cover;
             border-radius: 8px;
         }
+
         .success-icon {
             width: 80px;
             height: 80px;
@@ -76,9 +80,10 @@ $items_result = mysqli_query($dbconn, $items_query);
         }
     </style>
 </head>
+
 <body>
     <?php include '../includes/navbar.php'; ?>
-    
+
     <div class="container py-4">
         <div class="row justify-content-center">
             <div class="col-lg-8">
@@ -88,18 +93,19 @@ $items_result = mysqli_query($dbconn, $items_query);
                             <i class="fas fa-check-circle fa-3x"></i>
                         </div>
                         <h2 class="mb-3">Order Placed Successfully!</h2>
-                        <p class="text-muted mb-4">Thank you for your order. Your order has been received and is now being processed.</p>
+                        <p class="text-muted mb-4">Thank you for your order. Your order has been received and is now
+                            being processed.</p>
                         <div class="d-flex justify-content-center gap-3">
                             <a href="order_details.php?id=<?php echo $order_id; ?>" class="btn btn-primary">
                                 <i class="fas fa-info-circle me-2"></i>View Order Details
                             </a>
-                            <a href="marketplace.php" class="btn btn-outline-success">
+                            <a href="products.php" class="btn btn-outline-success">
                                 <i class="fas fa-shopping-basket me-2"></i>Continue Shopping
                             </a>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="card confirmation-card mb-4">
                     <div class="card-header bg-white py-3">
                         <h5 class="mb-0">Order Summary</h5>
@@ -112,10 +118,11 @@ $items_result = mysqli_query($dbconn, $items_query);
                             </div>
                             <div class="col-md-6">
                                 <h6 class="text-muted mb-2">Order Date</h6>
-                                <p class="mb-0"><?php echo date('F j, Y, g:i a', strtotime($order['order_date'])); ?></p>
+                                <p class="mb-0"><?php echo date('F j, Y, g:i a', strtotime($order['order_date'])); ?>
+                                </p>
                             </div>
                         </div>
-                        
+
                         <div class="row mb-3">
                             <div class="col-md-6 mb-3 mb-md-0">
                                 <h6 class="text-muted mb-2">Payment Method</h6>
@@ -126,12 +133,12 @@ $items_result = mysqli_query($dbconn, $items_query);
                                 <span class="badge bg-warning text-dark"><?php echo ucfirst($order['status']); ?></span>
                             </div>
                         </div>
-                        
+
                         <div class="mb-4">
                             <h6 class="text-muted mb-2">Shipping Address</h6>
                             <p class="mb-0"><?php echo nl2br(htmlspecialchars($order['shipping_address'])); ?></p>
                         </div>
-                        
+
                         <h6 class="mb-3">Order Items</h6>
                         <div class="table-responsive">
                             <table class="table table-borderless">
@@ -144,42 +151,47 @@ $items_result = mysqli_query($dbconn, $items_query);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php 
+                                    <?php
                                     $subtotal = 0;
-                                    while($item = mysqli_fetch_assoc($items_result)): 
+                                    while ($item = mysqli_fetch_assoc($items_result)):
                                         $item_total = $item['price'] * $item['quantity'];
                                         $subtotal += $item_total;
-                                    ?>
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <?php if(!empty($item['product_image'])): ?>
-                                                    <img src="../uploads/products/<?php echo $item['product_image']; ?>" class="product-img me-3" alt="<?php echo htmlspecialchars($item['name']); ?>">
-                                                <?php else: ?>
-                                                    <img src="../assets/images/product-placeholder.jpg" class="product-img me-3" alt="Product Image">
-                                                <?php endif; ?>
-                                                <div>
-                                                    <h6 class="mb-0"><?php echo htmlspecialchars($item['name']); ?></h6>
+                                        ?>
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <?php if (!empty($item['product_image'])): ?>
+                                                        <img src="../uploads/products/<?php echo $item['product_image']; ?>"
+                                                            class="product-img me-3"
+                                                            alt="<?php echo htmlspecialchars($item['name']); ?>">
+                                                    <?php else: ?>
+                                                        <img src="../assets/images/product-placeholder.jpg"
+                                                            class="product-img me-3" alt="Product Image">
+                                                    <?php endif; ?>
+                                                    <div>
+                                                        <h6 class="mb-0"><?php echo htmlspecialchars($item['name']); ?></h6>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-center"><?php echo $item['quantity']; ?></td>
-                                        <td class="text-end">रू<?php echo number_format($item['price'], 2); ?></td>
-                                        <td class="text-end">रू<?php echo number_format($item_total, 2); ?></td>
-                                    </tr>
+                                            </td>
+                                            <td class="text-center"><?php echo $item['quantity']; ?></td>
+                                            <td class="text-end">रू<?php echo number_format($item['price'], 2); ?></td>
+                                            <td class="text-end">रू<?php echo number_format($item_total, 2); ?></td>
+                                        </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                                 <tfoot class="table-light">
                                     <tr>
                                         <td colspan="3" class="text-end"><strong>Total</strong></td>
-                                        <td class="text-end"><strong>रू<?php echo number_format($order['total_amount'], 2); ?></strong></td>
+                                        <td class="text-end">
+                                            <strong>रू<?php echo number_format($order['total_amount'], 2); ?></strong>
+                                        </td>
                                     </tr>
                                 </tfoot>
                             </table>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="text-center mb-4">
                     <p class="mb-3">Have questions about your order?</p>
                     <a href="#" class="btn btn-outline-secondary">
@@ -189,7 +201,8 @@ $items_result = mysqli_query($dbconn, $items_query);
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

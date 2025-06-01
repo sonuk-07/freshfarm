@@ -4,7 +4,7 @@ include '../config/db.php';
 
 // Check if user is logged in and is a consumer
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'consumer') {
-    header("Location: ../auth/index.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 

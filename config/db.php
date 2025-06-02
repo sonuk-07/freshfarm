@@ -3,7 +3,7 @@
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "freshfarm";
+$dbname = "24152374";
 
 $dbconn = mysqli_connect($servername, $username, $password, $dbname);
 if (!$dbconn) {

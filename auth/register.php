@@ -19,7 +19,7 @@ include '../config/db.php';
 
             if (mysqli_stmt_execute($stmt)) {
                     $user_id = mysqli_insert_id($dbconn);
-                    header("Location: index.php");
+                    header("Location: login.php");
                     exit();
                 } else {
                     echo "Error: " . mysqli_error($dbconn);

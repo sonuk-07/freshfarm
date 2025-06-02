@@ -3,7 +3,7 @@ session_start();
 include '../config/db.php';
 
 // Check if user is logged in and is a farmer
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'farmer') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../auth/login.php");
     exit();
 }
@@ -21,30 +21,7 @@ $profile_query = "SELECT * FROM users WHERE user_id = $farmer_id";
 $profile_result = mysqli_query($dbconn, $profile_query);
 $profile = mysqli_fetch_assoc($profile_result);
 
-// Get farmer statistics
-// Total products
-$products_query = "SELECT COUNT(*) as total_products FROM products WHERE seller_id = $farmer_id";
-$products_result = mysqli_query($dbconn, $products_query);
-$products_data = mysqli_fetch_assoc($products_result);
-$total_products = $products_data['total_products'] ?? 0;
 
-// Total orders
-$orders_query = "SELECT COUNT(*) as total_orders FROM order_items oi 
-                JOIN products p ON oi.product_id = p.product_id 
-                WHERE p.seller_id = $farmer_id";
-$orders_result = mysqli_query($dbconn, $orders_query);
-$orders_data = mysqli_fetch_assoc($orders_result);
-$total_orders = $orders_data['total_orders'] ?? 0;
-
-// Total revenue
-$revenue_query = "SELECT SUM(oi.quantity * oi.price_per_unit) as total_revenue 
-                FROM order_items oi 
-                JOIN products p ON oi.product_id = p.product_id 
-                JOIN orders o ON oi.order_id = o.order_id 
-                WHERE p.seller_id = $farmer_id AND o.status = 'delivered'";
-$revenue_result = mysqli_query($dbconn, $revenue_query);
-$revenue_data = mysqli_fetch_assoc($revenue_result);
-$total_revenue = $revenue_data['total_revenue'] ?? 0;
 
 // Handle profile update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
@@ -219,8 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_image']) && 
     
     <div class="container-fluid">
         <div class="row">
-            
-            <!-- Main Content -->
+         <!-- Main Content -->
             <div class="col-md-10 ms-auto content-wrapper p-4">
                 <h2 class="mb-4">My Profile</h2>
                 
@@ -295,41 +271,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_image']) && 
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-12 mb-3">
-                                <div class="stats-card bg-success text-white p-3">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h6 class="mb-0">Products</h6>
-                                            <h3 class="mb-0"><?php echo $total_products; ?></h3>
-                                        </div>
-                                        <i class="fas fa-carrot fa-2x"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-12 mb-3">
-                                <div class="stats-card bg-info text-white p-3">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h6 class="mb-0">Orders</h6>
-                                            <h3 class="mb-0"><?php echo $total_orders; ?></h3>
-                                        </div>
-                                        <i class="fas fa-shopping-cart fa-2x"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-12 mb-3">
-                                <div class="stats-card bg-primary text-white p-3">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h6 class="mb-0">Revenue</h6>
-                                            <h3 class="mb-0"Rs.?php echo number_format($total_revenue, 2); ?></h3>
-                                        </div>
-                                        <i class="fas fa-dollar-sign fa-2x"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        
                     </div>
                     
                     <!-- Profile Edit Form -->
@@ -364,7 +306,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_image']) && 
                                     </div>
                                     <div class="mb-3">
                                         <label for="bio" class="form-label">Bio</label>
-                                        <textarea class="form-control" id="bio" name="bio" rows="3" placeholder="Tell customers about your farm and products..."><?php echo htmlspecialchars($profile['bio']); ?></textarea>
+                                        <textarea class="form-control" id="bio" name="bio" rows="3" placeholder="Tell people about yourself..."><?php echo htmlspecialchars($profile['bio']); ?></textarea>
                                     </div>
                                     <button type="submit" name="update_profile" class="btn btn-primary">Update Profile</button>
                                 </form>
@@ -400,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_image']) && 
         </div>
     </div>
     
-    <?php include '../includes/footer.php'; ?>
+    
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

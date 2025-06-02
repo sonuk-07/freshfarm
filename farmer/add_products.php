@@ -4,7 +4,7 @@ include '../config/db.php';
 
 // Check if user is logged in and is a farmer
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'farmer') {
-    header("Location: ../auth/index.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 
@@ -114,14 +114,6 @@ $categories_result = mysqli_query($dbconn, $categories_query);
     
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-2 d-none d-md-block sidebar py-4">
-                <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-                <a href="products.php" class="active"><i class="fas fa-carrot"></i> My Products</a>
-                <a href="orders.php"><i class="fas fa-shopping-cart"></i> Orders</a>
-                <a href="profile.php"><i class="fas fa-user"></i> Profile</a>
-            </div>
-            
             <!-- Main Content -->
             <div class="col-md-10 ms-auto content-wrapper p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -167,7 +159,7 @@ $categories_result = mysqli_query($dbconn, $categories_query);
                                 <div class="col-md-6 mb-3">
                                     <label for="price" class="form-label">Price (per unit)</label>
                                     <div class="input-group">
-                                        <span class="input-group-text">$</span>
+                                        <span class="input-group-text">Rs.</span>
                                         <input type="number" class="form-control" id="price" name="price" step="0.01" min="0.01" required>
                                     </div>
                                 </div>

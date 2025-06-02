@@ -4,7 +4,7 @@ include '../config/db.php';
 
 // Check if user is logged in and is a farmer
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'farmer') {
-    header("Location: ../auth/index.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 
@@ -334,7 +334,7 @@ $farmer_name = $_SESSION['username'] ?? 'Farmer';
                     <i class="fas fa-dollar-sign"></i>
                 </div>
                 <div class="stat-label">Total Sales</div>
-                <div class="stat-value">$<?php echo number_format($total_revenue, 2); ?></div>
+                <div class="stat-value">Rs.<?php echo number_format($total_revenue, 2); ?></div>
             </div>
 
             <div class="stat-card">
@@ -400,7 +400,7 @@ $farmer_name = $_SESSION['username'] ?? 'Farmer';
                             </div>
                             <div class="order-summary">
                                 <div class="order-amount">
-                                    $<?php echo number_format($order['quantity'] * $order['price_per_unit'], 2); ?>
+                                    Rs.<?php echo number_format($order['quantity'] * $order['price_per_unit'], 2); ?>
                                 </div>
                                 <span class="status-badge <?php
                                 if ($order['status'] == 'delivered')

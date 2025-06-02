@@ -4,7 +4,7 @@ include '../config/db.php';
 
 // Check if user is logged in and is an admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header("Location: ../auth/index.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 
@@ -412,10 +412,7 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
     </style>
 </head>
 <body>
-    <a href="../auth/logout.php" class="logout-btn">
-        <i class="fas fa-sign-out-alt me-2"></i> Logout
-    </a>
-
+<?php include '../includes/navbar.php'; ?>
     <div class="dashboard-container">
         <div class="dashboard-header">
             <h1 class="dashboard-title">Admin Dashboard</h1>
@@ -464,7 +461,7 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
                         <i class="fas fa-chart-line"></i>
                     </div>
                 </div>
-                <div class="stat-value">$<?php echo number_format($total_revenue, 0); ?></div>
+                <div class="stat-value">Rs.<?php echo number_format($total_revenue, 0); ?></div>
                 <div class="stat-description">+15.3% this month</div>
             </div>
         </div>
@@ -475,8 +472,7 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
             <a href="users.php" class="nav-tab">User Management</a>
             <a href="products.php" class="nav-tab">Product Management</a>
             <a href="orders.php" class="nav-tab">Order Management</a>
-            <a href="#" class="nav-tab">Review Moderation</a>
-            <a href="#" class="nav-tab">Analytics</a>
+            <a href="reviews.php" class="nav-tab">Review Moderation</a>
         </div>
 
         <!-- Recent Activity -->
@@ -493,8 +489,7 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
                         <i class="fas fa-user-plus"></i>
                     </div>
                     <div class="activity-content">
-                        <div class="activity-title">New <?php echo $recent_user['role']; ?> registered: <?php echo htmlspecialchars($recent_user['username']); ?></div>
-                        <div class="activity-time">2 minutes ago</div>
+                        <div class="activity-title"><?php echo $recent_user['role']; ?> logged in <?php echo htmlspecialchars($recent_user['username']); ?></div>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -510,7 +505,6 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
                     </div>
                     <div class="activity-content">
                         <div class="activity-title">Order #<?php echo $recent_order['order_id']; ?> completed successfully</div>
-                        <div class="activity-time">5 minutes ago</div>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -526,20 +520,9 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
                     </div>
                     <div class="activity-content">
                         <div class="activity-title">New product added: <?php echo htmlspecialchars($recent_product['name']); ?></div>
-                        <div class="activity-time">12 minutes ago</div>
                     </div>
                 </div>
                 <?php endif; ?>
-
-                <div class="activity-item">
-                    <div class="activity-icon warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <div class="activity-content">
-                        <div class="activity-title">Product review flagged for moderation</div>
-                        <div class="activity-time">18 minutes ago</div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -567,44 +550,10 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
                     </div>
                     <div class="action-title">Moderate Reviews</div>
                 </a>
-
-                <a href="#" class="action-card">
-                    <div class="action-icon revenue">
-                        <i class="fas fa-chart-bar"></i>
-                    </div>
-                    <div class="action-title">View Analytics</div>
-                </a>
             </div>
         </div>
 
-        <!-- Platform Settings -->
-        <div class="section">
-            <h2 class="section-title">
-                <i class="fas fa-cog" style="margin-right: 8px;"></i>
-                Platform Settings
-            </h2>
-            <div class="settings-section">
-                <div class="settings-item">
-                    <div class="settings-label">Maintenance Mode</div>
-                    <div class="toggle-switch" onclick="this.classList.toggle('active')"></div>
-                </div>
-                
-                <div class="settings-item">
-                    <div class="settings-label">Registration Mode</div>
-                    <select class="dropdown-select">
-                        <option selected>Open To All</option>
-                        <option>Invite Only</option>
-                        <option>Closed</option>
-                    </select>
-                </div>
-                
-                <div class="settings-item">
-                    <div class="settings-label">Notification Settings</div>
-                    <button class="configure-btn">Configure</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <script>
         // Add some interactivity
@@ -628,4 +577,5 @@ $recent_orders_result = mysqli_query($dbconn, $recent_orders_query);
         }, 60000);
     </script>
 </body>
+
 </html>

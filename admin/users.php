@@ -4,7 +4,7 @@ include '../config/db.php';
 
 // Check if user is logged in and is an admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header("Location: ../auth/index.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 
@@ -14,11 +14,40 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     
     // Don't allow admin to delete themselves
     if ($user_id != $_SESSION['user_id']) {
-        $delete_query = "DELETE FROM users WHERE user_id = $user_id";
-        if (mysqli_query($dbconn, $delete_query)) {
+        // Start transaction
+        mysqli_begin_transaction($dbconn);
+        
+        try {
+            // Delete related cart items
+            $delete_cart = "DELETE FROM cart WHERE consumer_id = $user_id";
+            mysqli_query($dbconn, $delete_cart);
+            
+            // Delete related reviews
+            $delete_reviews = "DELETE FROM product_reviews WHERE consumer_id = $user_id";
+            mysqli_query($dbconn, $delete_reviews);
+            
+            // Delete related order items
+            $delete_order_items = "DELETE oi FROM order_items oi 
+                                 INNER JOIN orders o ON oi.order_id = o.order_id 
+                                 WHERE o.consumer_id = $user_id";
+            mysqli_query($dbconn, $delete_order_items);
+            
+            // Delete related orders
+            $delete_orders = "DELETE FROM orders WHERE consumer_id = $user_id";
+            mysqli_query($dbconn, $delete_orders);
+            
+            // Finally delete the user
+            $delete_user = "DELETE FROM users WHERE user_id = $user_id";
+            mysqli_query($dbconn, $delete_user);
+            
+            // If everything is successful, commit the transaction
+            mysqli_commit($dbconn);
             $success_message = "User deleted successfully!";
-        } else {
-            $error_message = "Error deleting user: " . mysqli_error($dbconn);
+            
+        } catch (Exception $e) {
+            // If there's an error, rollback the changes
+            mysqli_rollback($dbconn);
+            $error_message = "Error deleting user: " . $e->getMessage();
         }
     } else {
         $error_message = "You cannot delete your own account!";
@@ -147,26 +176,8 @@ $users_result = mysqli_query($dbconn, $query);
             color: #10b981;
         }
 
-        .logout-btn {
-            position: fixed;
-            top: 24px;
-            right: 24px;
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: background 0.3s ease;
-        }
 
-        .logout-btn:hover {
-            background: #dc2626;
-            color: white;
-            text-decoration: none;
-        }
+
 
         .alert {
             padding: 16px;
@@ -462,24 +473,19 @@ $users_result = mysqli_query($dbconn, $query);
     </style>
 </head>
 <body>
-    <a href="../auth/logout.php" class="logout-btn">
-        <i class="fas fa-sign-out-alt"></i> Logout
-    </a>
 
     <div class="dashboard-container">
         <div class="dashboard-header">
             <h1 class="dashboard-title">User Management</h1>
             <p class="dashboard-subtitle">Manage users, roles, and permissions</p>
         </div>
-
         <!-- Navigation Tabs -->
         <div class="navigation-tabs">
             <a href="dashboard.php" class="nav-tab">Overview</a>
             <a href="users.php" class="nav-tab active">User Management</a>
             <a href="products.php" class="nav-tab">Product Management</a>
             <a href="orders.php" class="nav-tab">Order Management</a>
-            <a href="#" class="nav-tab">Review Moderation</a>
-            <a href="#" class="nav-tab">Analytics</a>
+            <a href="reviews.php" class="nav-tab">Review Moderation</a>
         </div>
 
         <!-- Alert Messages -->
@@ -584,12 +590,6 @@ $users_result = mysqli_query($dbconn, $query);
                                                class="btn btn-sm btn-edit" 
                                                title="Edit User">
                                                 <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="users.php?toggle_status=<?php echo $user['user_id']; ?>" 
-                                               class="btn btn-sm btn-toggle <?php echo $user['is_active'] ? '' : 'activate'; ?>" 
-                                               onclick="return confirm('Are you sure you want to <?php echo $user['is_active'] ? 'deactivate' : 'activate'; ?> this user?')"
-                                               title="<?php echo $user['is_active'] ? 'Deactivate' : 'Activate'; ?> User">
-                                                <i class="fas fa-<?php echo $user['is_active'] ? 'ban' : 'check'; ?>"></i>
                                             </a>
                                             <?php if($user['user_id'] != $_SESSION['user_id']): ?>
                                             <a href="users.php?delete=<?php echo $user['user_id']; ?>" 

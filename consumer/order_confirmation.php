@@ -31,7 +31,7 @@ if (mysqli_num_rows($order_result) == 0) {
 $order = mysqli_fetch_assoc($order_result);
 
 // Fetch order items
-$items_query = "SELECT oi.*, p.name, p.product_image 
+$items_query = "SELECT oi.*, p.name, p.product_image ,p.price
                FROM order_items oi
                JOIN products p ON oi.product_id = p.product_id
                WHERE oi.order_id = $order_id";
@@ -175,7 +175,7 @@ $items_result = mysqli_query($dbconn, $items_query);
                                             </td>
                                             <td class="text-center"><?php echo $item['quantity']; ?></td>
                                             <td class="text-end">रू<?php echo number_format($item['price'], 2); ?></td>
-                                            <td class="text-end">रू<?php echo number_format($item_total, 2); ?></td>
+                                            <td class="text-end">Rs.<?php echo number_format($item_total, 2); ?></td>
                                         </tr>
                                     <?php endwhile; ?>
                                 </tbody>
@@ -183,7 +183,7 @@ $items_result = mysqli_query($dbconn, $items_query);
                                     <tr>
                                         <td colspan="3" class="text-end"><strong>Total</strong></td>
                                         <td class="text-end">
-                                            <strong>रू<?php echo number_format($order['total_amount'], 2); ?></strong>
+                                            <strong>Rs.<?php echo number_format($order['total_amount'], 2); ?></strong>
                                         </td>
                                     </tr>
                                 </tfoot>

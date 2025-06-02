@@ -4,7 +4,7 @@ include '../config/db.php';
 
 // Check if user is logged in and is an admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header("Location: ../auth/index.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 
@@ -147,16 +147,7 @@ $user = mysqli_fetch_assoc($user_result);
 <body>
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-2 p-0 sidebar">
-                <h2 class="text-center text-white py-3">Admin Panel</h2>
-                <a href="dashboard.php"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
-                <a href="users.php" class="active"><i class="fas fa-users me-2"></i> Users</a>
-                <a href="products.php"><i class="fas fa-box me-2"></i> Products</a>
-                <a href="categories.php"><i class="fas fa-tags me-2"></i> Categories</a>
-                <a href="orders.php"><i class="fas fa-shopping-cart me-2"></i> Orders</a>
-                <a href="../auth/logout.php"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
-            </div>
+        <?php include '../includes/navbar.php'; ?>
             
             <!-- Main Content -->
             <div class="col-md-10 content">

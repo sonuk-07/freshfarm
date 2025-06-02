@@ -22,7 +22,7 @@ $query = "SELECT p.*, c.name as category_name, u.first_name, u.last_name
           FROM products p
           LEFT JOIN categories c ON p.category_id = c.category_id
           LEFT JOIN users u ON p.seller_id = u.user_id
-          WHERE p.stock > 0";
+          WHERE p.stock > 0 AND p.status = 'approved'"; // Add status filter here
 
 // Apply category filter
 if ($category_filter > 0) {
@@ -78,53 +78,380 @@ if (isset($_SESSION['cart_error'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marketplace - FarmFresh Connect</title>
+    <title>All Products - FarmFresh Connect</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: 'Open Sans', sans-serif;
-            background-color: #f8f9fa;
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fffe;
+            color: #2d3748;
+            line-height: 1.6;
         }
+                
+        /* Main Content Styles */
+        .main-content {
+            padding: 2rem 0;
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        
+        .search-sort-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            gap: 1rem;
+        }
+        
+        .search-container {
+            flex: 1;
+            max-width: 400px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            background-color: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+        
+        .sort-container {
+            position: relative;
+        }
+        
+        .sort-select {
+            padding: 0.75rem 2.5rem 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            background: white;
+            font-size: 0.875rem;
+            color: #374151;
+            min-width: 180px;
+            cursor: pointer;
+        }
+        
+        .sort-select:focus {
+            outline: none;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+        
+        .products-count {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-left: auto;
+        }
+        
+        /* Category Filter Tabs */
+        .category-filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+        
+        .category-tab {
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            background: white;
+            border: 1px solid #e5e7eb;
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        
+        .category-tab:hover {
+            color: #22c55e;
+            border-color: #22c55e;
+            text-decoration: none;
+        }
+        
+        .category-tab.active {
+            background: #22c55e;
+            color: white;
+            border-color: #22c55e;
+        }
+        
+        /* Products Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
         .product-card {
-            border-radius: 10px;
+            background: white;
+            border-radius: 0.75rem;
             overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            border: 1px solid #f3f4f6;
         }
+        
         .product-card:hover {
-            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
         }
-        .product-img {
+        
+        .product-image {
+            width: 100%;
             height: 200px;
             object-fit: cover;
+            background: #f9fafb;
         }
-        .filter-card {
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        
+        .product-info {
+            padding: 1.25rem;
         }
-        .category-badge {
-            background-color: #e9ecef;
-            color: #495057;
-            font-size: 0.8rem;
-            padding: 0.3rem 0.6rem;
-            border-radius: 50px;
+        
+        .product-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        
+        .product-description {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        
+        .product-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .product-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .product-unit {
+            color: #9ca3af;
+            font-size: 0.75rem;
+            margin-left: 0.25rem;
+        }
+        
+        .organic-badge {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .add-to-cart-btn {
+            width: 100%;
+            background: #22c55e;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .add-to-cart-btn:hover {
+            background: #16a34a;
+            transform: translateY(-1px);
+        }
+        
+        /* Sidebar Filters */
+        .filters-sidebar {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .filters-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+        }
+        
+        .filter-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .filter-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .form-control, .form-select {
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            outline: none;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+        
+        .btn-primary {
+            background: #22c55e;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background: #16a34a;
+        }
+        
+        .btn-outline-secondary {
+            border: 1px solid #d1d5db;
+            color: #6b7280;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-outline-secondary:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+            color: #374151;
+        }
+        
+        /* No Products State */
+        .no-products {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6b7280;
+        }
+        
+        .no-products-icon {
+            font-size: 3rem;
+            color: #d1d5db;
+            margin-bottom: 1rem;
+        }
+        
+        .no-products h4 {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+        
+        /* Alert Messages */
+        .alert {
+            border-radius: 0.5rem;
+            border: none;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .alert-success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .alert-danger {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .search-sort-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .products-count {
+                margin-left: 0;
+                margin-top: 0.5rem;
+            }
+            
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 1rem;
+            }
+            
+            .category-filters {
+                margin-bottom: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Navbar -->
     <?php include '../includes/navbar.php'; ?>
-    
-    <div class="container py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="mb-0">Marketplace</h1>
-            <a href="cart.php" class="btn btn-success">
-                <i class="fas fa-shopping-cart me-2"></i>View Cart
-            </a>
-        </div>
-        
+    <!-- Main Content -->
+    <div class="container main-content">
         <?php if($success_message): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <?php echo $success_message; ?>
@@ -139,115 +466,100 @@ if (isset($_SESSION['cart_error'])) {
             </div>
         <?php endif; ?>
         
-        <div class="row">
-            <!-- Filters Sidebar -->
-            <div class="col-lg-3 mb-4">
-                <div class="card filter-card">
-                    <div class="card-body">
-                        <h5 class="card-title mb-3">Filters</h5>
-                        <form action="products.php" method="get">
-                            <!-- Search -->
-                            <?php if(!empty($search_term)): ?>
-                                <input type="hidden" name="search" value="<?php echo htmlspecialchars($search_term); ?>">
-                            <?php endif; ?>
-                            
-                            <!-- Categories -->
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Categories</label>
-                                <select class="form-select" name="category">
-                                    <option value="0">All Categories</option>
-                                    <?php mysqli_data_seek($categories_result, 0); ?>
-                                    <?php while($category = mysqli_fetch_assoc($categories_result)): ?>
-                                        <option value="<?php echo $category['category_id']; ?>" <?php echo $category_filter == $category['category_id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($category['name']); ?>
-                                        </option>
-                                    <?php endwhile; ?>
-                                </select>
-                            </div>
-                            
-                            <!-- Price Range -->
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Price Range</label>
-                                <div class="row g-2">
-                                    <div class="col">
-                                        <div class="input-group">
-                                            <span class="input-group-text">$</span>
-                                            <input type="number" class="form-control" name="min_price" value="<?php echo $min_price; ?>" min="0" step="0.01">
-                                        </div>
-                                    </div>
-                                    <div class="col">
-                                        <div class="input-group">
-                                            <span class="input-group-text">$</span>
-                                            <input type="number" class="form-control" name="max_price" value="<?php echo $max_price; ?>" min="0" step="0.01">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Sort By -->
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Sort By</label>
-                                <select class="form-select" name="sort">
-                                    <option value="newest" <?php echo $sort_by == 'newest' ? 'selected' : ''; ?>>Newest First</option>
-                                    <option value="price_low" <?php echo $sort_by == 'price_low' ? 'selected' : ''; ?>>Price: Low to High</option>
-                                    <option value="price_high" <?php echo $sort_by == 'price_high' ? 'selected' : ''; ?>>Price: High to Low</option>
-                                    <option value="name" <?php echo $sort_by == 'name' ? 'selected' : ''; ?>>Name: A to Z</option>
-                                </select>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
-                        </form>
-                        
-                        <?php if($category_filter > 0 || $min_price > 0 || $max_price < 1000 || !empty($search_term) || $sort_by != 'newest'): ?>
-                            <a href="products.php" class="btn btn-outline-secondary w-100 mt-2">Clear Filters</a>
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">All Products</h1>
+            
+            <!-- Search and Sort Bar -->
+            <div class="search-sort-bar">
+                <div class="search-container position-relative">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" placeholder="Search products..." 
+                           value="<?php echo htmlspecialchars($search_term); ?>" 
+                           onkeypress="if(event.key==='Enter'){searchProducts(this.value)}">
+                </div>
+                
+                <form method="get" class="sort-container">
+                    <?php foreach($_GET as $key => $value): ?>
+                        <?php if($key !== 'sort'): ?>
+                            <input type="hidden" name="<?php echo htmlspecialchars($key); ?>" value="<?php echo htmlspecialchars($value); ?>">
                         <?php endif; ?>
-                    </div>
+                    <?php endforeach; ?>
+                    <select name="sort" class="sort-select" onchange="this.form.submit()">
+                        <option value="name" <?php echo $sort_by == 'name' ? 'selected' : ''; ?>>Sort by Name</option>
+                        <option value="newest" <?php echo $sort_by == 'newest' ? 'selected' : ''; ?>>Sort by Newest</option>
+                        <option value="price_low" <?php echo $sort_by == 'price_low' ? 'selected' : ''; ?>>Price: Low to High</option>
+                        <option value="price_high" <?php echo $sort_by == 'price_high' ? 'selected' : ''; ?>>Price: High to Low</option>
+                    </select>
+                </form>
+                
+                <div class="products-count">
+                    <?php echo mysqli_num_rows($products_result); ?> products found
                 </div>
             </div>
-            
+        </div>
+        
+        <!-- Category Filter Tabs -->
+        <div class="category-filters">
+            <a href="?<?php echo http_build_query(array_merge($_GET, ['category' => 0])); ?>" 
+               class="category-tab <?php echo $category_filter == 0 ? 'active' : ''; ?>">All Categories</a>
+            <?php mysqli_data_seek($categories_result, 0); ?>
+            <?php while($category = mysqli_fetch_assoc($categories_result)): ?>
+                <a href="?<?php echo http_build_query(array_merge($_GET, ['category' => $category['category_id']])); ?>" 
+                   class="category-tab <?php echo $category_filter == $category['category_id'] ? 'active' : ''; ?>">
+                    <?php echo htmlspecialchars($category['name']); ?>
+                </a>
+            <?php endwhile; ?>
+        </div>
+        
+        <div class="row">
+          
+                    
+                        
             <!-- Products Grid -->
             <div class="col-lg-9">
                 <?php if(mysqli_num_rows($products_result) > 0): ?>
-                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    <div class="products-grid">
                         <?php while($product = mysqli_fetch_assoc($products_result)): ?>
-                            <div class="col">
-                                <div class="card product-card h-100">
-                                    <?php if(!empty($product['product_image'])): ?>
-                                        <img src="../uploads/products/<?php echo $product['product_image']; ?>" class="card-img-top product-img" alt="<?php echo htmlspecialchars($product['name']); ?>">
-                                    <?php else: ?>
-                                        <img src="../assets/images/product-placeholder.jpg" class="card-img-top product-img" alt="Product Image">
-                                    <?php endif; ?>
+                            <div class="product-card">
+                                <?php if(!empty($product['product_image'])): ?>
+                                    <img src="../uploads/products/<?php echo $product['product_image']; ?>" 
+                                         class="product-image" alt="<?php echo htmlspecialchars($product['name']); ?>">
+                                <?php else: ?>
+                                    <img src="../assets/images/product-placeholder.jpg" class="product-image" alt="Product Image">
+                                <?php endif; ?>
+                                
+                                <div class="product-info">
+                                    <h3 class="product-title"><?php echo htmlspecialchars($product['name']); ?></h3>
+                                    <p class="product-description">
+                                        <?php echo mb_strimwidth(htmlspecialchars($product['description']), 0, 100, "..."); ?>
+                                    </p>
                                     
-                                    <div class="card-body d-flex flex-column">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <span class="category-badge"><?php echo htmlspecialchars($product['category_name'] ?? 'Uncategorized'); ?></span>
+                                    <div class="product-meta">
+                                        <div>
+                                            <span class="product-price">Rs.<?php echo number_format($product['price'], 2); ?></span>
+                                            <span class="product-unit">per <?php echo htmlspecialchars($product['category_name'] ?? 'unit'); ?></span>
                                         </div>
-                                        
-                                        <h5 class="card-title"><?php echo htmlspecialchars($product['name']); ?></h5>
-                                        <p class="card-text text-muted small mb-2">By <?php echo htmlspecialchars($product['first_name'] . ' ' . $product['last_name']); ?></p>
-                                        <p class="card-text text-primary fw-bold mb-2">$<?php echo number_format($product['price'], 2); ?></p>
-                                        <p class="card-text small mb-3"><?php echo mb_strimwidth(htmlspecialchars($product['description']), 0, 80, "..."); ?></p>
-                                        
-                                        <div class="mt-auto d-flex">
-                                            <a href="product_details.php?id=<?php echo $product['product_id']; ?>" class="btn btn-outline-primary flex-grow-1 me-2">View Details</a>
-                                            <form action="add_to_cart.php" method="post">
-                                                <input type="hidden" name="product_id" value="<?php echo $product['product_id']; ?>">
-                                                <input type="hidden" name="quantity" value="1">
-                                                <button type="submit" class="btn btn-success">
-                                                    <i class="fas fa-cart-plus"></i>
-                                                </button>
-                                            </form>
-                                        </div>
+                                        <span class="organic-badge">Organic</span>
                                     </div>
+                                    
+                                    <form action="add_to_cart.php" method="post">
+                                        <input type="hidden" name="product_id" value="<?php echo $product['product_id']; ?>">
+                                        <input type="hidden" name="quantity" value="1">
+                                        <button type="submit" class="add-to-cart-btn">
+                                            <i class="fas fa-plus"></i>
+                                            Add to Cart
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         <?php endwhile; ?>
                     </div>
                 <?php else: ?>
-                    <div class="text-center py-5">
-                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <div class="no-products">
+                        <i class="fas fa-search no-products-icon"></i>
                         <h4>No products found</h4>
-                        <p class="text-muted">Try adjusting your filters or search criteria.</p>
+                        <p>Try adjusting your filters or search criteria.</p>
                         <a href="products.php" class="btn btn-primary">Clear Filters</a>
                     </div>
                 <?php endif; ?>
@@ -255,8 +567,20 @@ if (isset($_SESSION['cart_error'])) {
         </div>
     </div>
     
+    <!-- Footer -->
     <?php include '../includes/footer.php'; ?>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function searchProducts(term) {
+            const url = new URL(window.location);
+            if (term.trim()) {
+                url.searchParams.set('search', term);
+            } else {
+                url.searchParams.delete('search');
+            }
+            window.location.href = url.toString();
+        }
+    </script>
 </body>
 </html>

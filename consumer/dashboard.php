@@ -4,7 +4,7 @@ include '../config/db.php';
 
 // Check if user is logged in and is a consumer
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'consumer') {
-    header("Location: ../auth/index.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 
@@ -28,17 +28,6 @@ $total_orders_result = mysqli_query($dbconn, $total_orders_query);
 $total_orders_data = mysqli_fetch_assoc($total_orders_result);
 $total_orders = $total_orders_data['total_orders'] ?? 0;
 
-// Count favorite farmers - Check if table exists first
-$favorite_farmers = 0;
-$table_check = mysqli_query($dbconn, "SHOW TABLES LIKE 'favorite_farmers'");
-if (mysqli_num_rows($table_check) > 0) {
-    $favorites_query = "SELECT COUNT(DISTINCT seller_id) as favorite_farmers 
-                       FROM favorite_farmers 
-                       WHERE consumer_id = $consumer_id";
-    $favorites_result = mysqli_query($dbconn, $favorites_query);
-    $favorites_data = mysqli_fetch_assoc($favorites_result);
-    $favorite_farmers = $favorites_data['favorite_farmers'] ?? 0;
-}
 
 // Count saved items - Check if table exists first
 $saved_items = 0;
@@ -49,6 +38,19 @@ if (mysqli_num_rows($table_check) > 0) {
     $saved_items_data = mysqli_fetch_assoc($saved_items_result);
     $saved_items = $saved_items_data['saved_items'] ?? 0;
 }
+
+// Count cart items
+$cart_count = 0;
+$cart_check = mysqli_query($dbconn, "SHOW TABLES LIKE 'cart'");
+if (mysqli_num_rows($cart_check) > 0) {
+    $cart_query = "SELECT COUNT(*) as count FROM cart WHERE consumer_id = $consumer_id";
+    $cart_result = mysqli_query($dbconn, $cart_query);
+    if ($cart_result && mysqli_num_rows($cart_result) > 0) {
+        $cart_data = mysqli_fetch_assoc($cart_result);
+        $cart_count = $cart_data['count'] ?? 0;
+    }
+}
+
 
 // Recent orders
 $recent_orders_query = "SELECT o.*, COUNT(oi.order_item_id) as item_count 
@@ -68,21 +70,7 @@ $recommended_query = "SELECT p.*, c.name as category_name, u.username as seller_
                      ORDER BY RAND() LIMIT 3";
 $recommended_result = mysqli_query($dbconn, $recommended_query);
 
-// Get favorite farmers - Check if table exists first
-$favorite_farmers_result = false;
-$table_check = mysqli_query($dbconn, "SHOW TABLES LIKE 'favorite_farmers'");
-if (mysqli_num_rows($table_check) > 0) {
-    $favorite_farmers_query = "SELECT u.user_id, u.username, u.profile_image, 
-                              (SELECT GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') 
-                               FROM products p 
-                               JOIN categories c ON p.category_id = c.category_id 
-                               WHERE p.seller_id = u.user_id) as specialties
-                              FROM users u
-                              JOIN favorite_farmers ff ON u.user_id = ff.seller_id
-                              WHERE ff.consumer_id = $consumer_id
-                              LIMIT 1";
-    $favorite_farmers_result = mysqli_query($dbconn, $favorite_farmers_query);
-}
+
 ?>
 
 <!DOCTYPE html>
@@ -285,6 +273,23 @@ if (mysqli_num_rows($table_check) > 0) {
             color: var(--primary-green);
         }
 
+        .btn-sm-custom {
+            background-color: var(--primary-green);
+            border: none;
+            border-radius: 6px;
+            padding: 0.375rem 0.75rem;
+            font-weight: 500;
+            color: white;
+            text-decoration: none;
+            font-size: 0.75rem;
+            transition: background-color 0.2s;
+        }
+
+        .btn-sm-custom:hover {
+            background-color: var(--dark-green);
+            color: white;
+        }
+
         .product-grid {
             display: grid;
             gap: 1rem;
@@ -294,6 +299,15 @@ if (mysqli_num_rows($table_check) > 0) {
             display: flex;
             gap: 1rem;
             align-items: center;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .product-item:hover {
+            border-color: var(--primary-green);
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.1);
         }
 
         .product-image {
@@ -318,42 +332,10 @@ if (mysqli_num_rows($table_check) > 0) {
         .product-price {
             font-weight: 600;
             color: var(--primary-green);
-        }
-
-        .farmer-spotlight {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: var(--card-shadow);
-            border: 1px solid var(--border-color);
-            text-align: center;
-        }
-
-        .farmer-avatar-large {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background-color: var(--primary-green);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 1.5rem;
-            margin: 0 auto 1rem;
-        }
-
-        .farmer-name {
-            font-weight: 600;
-            color: var(--text-primary);
             margin-bottom: 0.5rem;
         }
 
-        .farmer-description {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            margin-bottom: 1rem;
-        }
+
 
         .empty-state {
             text-align: center;
@@ -404,7 +386,7 @@ if (mysqli_num_rows($table_check) > 0) {
                     <i class="fas fa-shopping-cart"></i>
                 </div>
                 <div class="stat-title">Cart Items</div>
-                <div class="stat-value">0</div>
+                <div class="stat-value"><?php echo $cart_count; ?></div>
             </div>
 
             <div class="stat-card">
@@ -434,7 +416,7 @@ if (mysqli_num_rows($table_check) > 0) {
                                 </div>
                             </div>
                             <div class="text-end">
-                                <div class="order-price">$<?php echo number_format($order['total_amount'], 2); ?></div>
+                                <div class="order-price">Rs.<?php echo number_format($order['total_amount'], 2); ?></div>
                                 <span class="status-badge <?php echo $order['status'] == 'delivered' ? 'status-delivered' : 'status-shipped'; ?>">
                                     <?php echo ucfirst($order['status']); ?>
                                 </span>
@@ -449,42 +431,12 @@ if (mysqli_num_rows($table_check) > 0) {
                 <?php endif; ?>
             </div>
 
-            <!-- Quick Actions & Farmer Spotlight -->
-            <div>
-                <!-- Quick Actions -->
-                <div class="section-card mb-2">
-                    <h3 class="section-title">Quick Actions</h3>
-                    <div class="d-grid gap-2">
-                        <a href="products.php" class="btn-primary-custom text-center">Browse Products</a>
-                        <a href="cart.php" class="btn-outline-custom text-center">View Cart (0)</a>
-                    </div>
-                </div>
-
-                <!-- Farmer Spotlight -->
-                <div class="farmer-spotlight">
-                    <h3 class="section-title">Farmer Spotlight</h3>
-                    <?php if ($favorite_farmers_result && mysqli_num_rows($favorite_farmers_result) > 0): ?>
-                        <?php $farmer = mysqli_fetch_assoc($favorite_farmers_result); ?>
-                        <div class="farmer-avatar-large">
-                            <?php if (!empty($farmer['profile_image'])): ?>
-                                <img src="../uploads/profiles/<?php echo $farmer['profile_image']; ?>"
-                                     alt="<?php echo htmlspecialchars($farmer['username']); ?>" 
-                                     style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
-                            <?php else: ?>
-                                <?php echo strtoupper(substr($farmer['username'], 0, 2)); ?>
-                            <?php endif; ?>
-                        </div>
-                        <div class="farmer-name"><?php echo htmlspecialchars($farmer['username']); ?></div>
-                        <div class="farmer-description">
-                            <?php echo htmlspecialchars($farmer['specialties'] ?? 'Organic vegetables grown with care for over 20 years.'); ?>
-                        </div>
-                        <a href="../farmer_profile.php?id=<?php echo $farmer['user_id']; ?>" class="btn-outline-custom">Visit Farm</a>
-                    <?php else: ?>
-                        <div class="farmer-avatar-large">JF</div>
-                        <div class="farmer-name">John's Farm</div>
-                        <div class="farmer-description">Organic vegetables grown with care for over 20 years.</div>
-                        <a href="../farmers.php" class="btn-outline-custom">Visit Farm</a>
-                    <?php endif; ?>
+            <!-- Quick Actions -->
+            <div class="section-card">
+                <h3 class="section-title">Quick Actions</h3>
+                <div class="d-grid gap-2">
+                    <a href="products.php" class="btn-primary-custom text-center">Browse Products</a>
+                    <a href="cart.php" class="btn-outline-custom text-center">View Cart (<?php echo $cart_count; ?>)</a>
                 </div>
             </div>
         </div>
@@ -497,13 +449,28 @@ if (mysqli_num_rows($table_check) > 0) {
                 <div class="product-grid">
                     <?php while ($product = mysqli_fetch_assoc($recommended_result)): ?>
                         <div class="product-item">
+                            <div class="product-image">
+                                <?php if (!empty($product['product_image'])): ?>
+                                    <img src="../uploads/products/<?php echo $product['product_image']; ?>" 
+                                         alt="<?php echo htmlspecialchars($product['name']); ?>"
+                                         class="product-image">
+                                <?php else: ?>
+                                    <div class="product-image d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-leaf" style="color: var(--primary-green); font-size: 1.5rem;"></i>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            
                             <div class="product-info flex-grow-1">
                                 <h6><?php echo htmlspecialchars($product['name']); ?></h6>
-                                <div class="product-meta"><?php echo htmlspecialchars($product['seller_name'] ?? 'Local Farm'); ?></div>
+                                <div class="product-meta">by <?php echo htmlspecialchars($product['seller_name'] ?? 'Local Farm'); ?></div>
+                                <div class="product-price">Rs.<?php echo number_format($product['price'], 2); ?>/<?php echo htmlspecialchars($product['unit'] ?? 'lb'); ?></div>
                             </div>
                             
                             <div class="text-end">
-                                <div class="product-price">$<?php echo number_format($product['price'], 2); ?>/<?php echo $product['unit'] ?? 'lb'; ?></div>
+                                <a href="product_details.php?id=<?php echo $product['product_id']; ?>" class="btn-sm-custom">
+                                    View Product
+                                </a>
                             </div>
                         </div>
                     <?php endwhile; ?>
